@@ -294,40 +294,48 @@
 document.getElementById("semester").addEventListener("change", fetchCourseCodes);
 
 
-            function fetchResults() {
-                const session = document.getElementById("session").value;
-                const semester = document.getElementById("semester").value;
-                const courseCode = document.getElementById("course_code").value;
-                const examType = document.getElementById("exam_type").value;
-            
-                const tableBody = document.getElementById("results-table");
-                tableBody.innerHTML = "";
-        
-                if (session && semester && courseCode && examType) {
-                    fetch(`/fetch_students?session=${session}&semester=${semester}&course_code=${courseCode}`)
-                        .then(response => response.json())
-                        .then(data => {
-                            if (data.students.length === 0) {
-                                tableBody.innerHTML = "<tr><td colspan='4'>No students found</td></tr>";
-                            } else {
-                                data.students.forEach(student => {
-                                    const row = `
-                                        <tr>
-                                            <td>${student.roll_number}</td>
-                                            <td>${courseCode}</td>
-                                            <td>${examType}</td>
-                                            <td><input type='number' name='marks_${student.roll_number}' placeholder='Enter Marks'></td>
-                                        </tr>`;
-                                    tableBody.innerHTML += row;
-                                });
-                            }
-                        })
-                        .catch(error => {
-                            console.error("Error fetching students:", error);
-                            alert("Failed to fetch student data. Please try again.");
-                        });
+function fetchResults() {
+    const session = document.getElementById("session").value;
+    const semester = document.getElementById("semester").value;
+    const courseCode = document.getElementById("course_code").value;
+    const examType = document.getElementById("exam_type").value;
+
+    const tableBody = document.getElementById("results-table");
+    tableBody.innerHTML = "";
+
+    if (session && semester && courseCode && examType) {
+        fetch(`/fetch_students?session=${session}&semester=${semester}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
                 }
-            }
+                return response.json();
+            })
+            .then(data => {
+                console.log("Students Data:", data);  // Log the fetched data
+                if (data.students.length === 0) {
+                    tableBody.innerHTML = "<tr><td colspan='4'>No students found</td></tr>";
+                } else {
+                    data.students.forEach(student => {
+                        const row = `
+                            <tr>
+                                <td>${student.roll_number}</td>
+                                <td>${courseCode}</td>
+                                <td>${examType}</td>
+                                <td><input type='number' name='marks_${student.roll_number}' placeholder='Enter Marks'></td>
+                            </tr>`;
+                        tableBody.innerHTML += row;
+                    });
+                }
+            })
+            .catch(error => {
+                console.error("Error fetching students:", error);
+                alert("Failed to fetch student data. Please try again.");
+            });
+    } else {
+        alert("Please fill all fields (Session, Semester, Course Code, Exam Type).");
+    }
+}
         
             function submitMarks() {
     const session = document.getElementById("session").value;

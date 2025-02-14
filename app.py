@@ -1200,6 +1200,8 @@ def fetch_students():
 
     try:
         students = execute_query(query, params, fetch=True)
+        print(f"Query: {query % params}")  # Log the query and parameters
+        print(f"Students Fetched: {students}")  # Log the fetched students
         if not students:
             return jsonify({"students": []})  # No students found
         return jsonify({"students": students})  # Return matched students
@@ -1229,9 +1231,10 @@ def submit_students():
                 student['roll_number'],
                 student['session'],
                 student['semester'],
-                student['department'],
+                
                 student['course_code'],
                 student['course_name'],
+                student['department'],
                 
             ))
 
