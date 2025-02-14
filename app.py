@@ -13,6 +13,8 @@ from itsdangerous import URLSafeTimedSerializer
 from werkzeug.security import generate_password_hash, check_password_hash
 import mysql.connector
 import secrets
+from datetime import timedelta
+
 
 
 
@@ -26,6 +28,7 @@ app.config['MAIL_USE_TLS'] = True
 app.config['MAIL_USE_SSL'] = False
 mail = Mail(app)
 
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=1)  # Session expires after 1 day
 
 mydb = mysql.connector.connect(
     host="localhost",
@@ -952,35 +955,56 @@ def edit_profile():
 
 
 
+from flask import jsonify, request, session
+import traceback
+
 @app.route('/submit_marks', methods=['POST'])
 def submit_marks():
     try:
-        teacher_name = session.get('teacher_name')
-        if not teacher_name:
+        # Log session data for debugging
+        print("Session data:", session)
+
+        # Check if the teacher is logged in
+        teacher_email = session.get('email')
+        if not teacher_email:
             return jsonify({"error": "Unauthorized: Please log in"}), 403
 
+        # Parse incoming JSON data
         data = request.json
         print("Received data:", data)  # Log incoming data
-        marks = data.get('marks', [])
 
-        if not marks:
+        # Validate the data
+        if not data or 'marks' not in data:
             return jsonify({"error": "Marks data is required"}), 400
 
-        course_code = marks[0]['course_code']
-        exam_type = marks[0]['exam_type']
+        marks = data.get('marks', [])
+        if not marks:
+            return jsonify({"error": "No marks provided"}), 400
+
+        # Extract course code and exam type from the first mark entry
+        course_code = marks[0].get('course_code')
+        exam_type = marks[0].get('exam_type')
+
+        if not course_code or not exam_type:
+            return jsonify({"error": "Course code and exam type are required"}), 400
 
         cursor = mydb.cursor(dictionary=True)
 
         # Verify if the teacher is assigned to this course
         verify_query = """
-            SELECT 1 FROM teacher_course_assign WHERE teacher_name = %s AND course_code = %s
+            SELECT 1 FROM teacher_course_assign WHERE email = %s AND course_code = %s
         """
-        cursor.execute(verify_query, (teacher_name, course_code,))
+        cursor.execute(verify_query, (teacher_email, course_code,))
         if not cursor.fetchone():
             return jsonify({"error": "You are not assigned to this course"}), 403
 
         # Insert or update marks in the `result` table
         for mark in marks:
+            # Validate each mark entry
+            required_fields = ['roll_number', 'session', 'semester', 'course_code', 'exam_type', 'marks']
+            if not all(field in mark for field in required_fields):
+                return jsonify({"error": f"Invalid mark entry: {mark}"}), 400
+
             query = """
                 INSERT INTO result (roll_number, session, semester, course_code, exam_type, marks)
                 VALUES (%s, %s, %s, %s, %s, %s)
@@ -992,14 +1016,17 @@ def submit_marks():
             )
             cursor.execute(query, params)
 
+        # Commit the transaction
         mydb.commit()
         return jsonify({"message": "Marks submitted successfully"}), 200
 
     except Exception as e:
+        # Log the error and rollback the transaction
         print(f"Error submitting marks: {e}")
         traceback.print_exc()  # Log the full traceback
         mydb.rollback()
-        return jsonify({"error": "Failed to submit marks"}), 500
+        return jsonify({"error": f"Failed to submit marks: {str(e)}"}), 500
+    
 
 import traceback
 

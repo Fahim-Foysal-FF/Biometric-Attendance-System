@@ -21,7 +21,6 @@
             width: 100%;
             max-width: 1200px;
             margin: 100px auto;
-
             background: white;
             padding: 20px;
             border-radius: 10px;
@@ -70,7 +69,8 @@
             margin-top: 20px;
         }
 
-        table th, table td {
+        table th,
+        table td {
             padding: 10px;
             border: 1px solid #ddd;
             text-align: left;
@@ -183,7 +183,8 @@
             <div class="form-header">
                 <h2>Manage Marks</h2>
             </div>
-    
+
+            <!-- Dropdowns for Session, Semester, Course Code, and Exam Type -->
             <div class="form-row">
                 <div class="form-group">
                     <label for="session">Session</label>
@@ -230,14 +231,20 @@
                     </select>
                 </div>
             </div>
-    
+
+            <!-- Fetch Students Button -->
+            <div class="form-submit">
+                <button type="button" onclick="fetchResults()">Fetch Students</button>
+            </div>
+
+            <!-- Student Marks Table -->
             <div id="results-container">
                 <h3>Student Marks</h3>
                 <table>
                     <thead>
                         <tr>
                             <th>Student ID</th>
-                            <th>Course </th>
+                            <th>Course</th>
                             <th>Exam Type</th>
                             <th>Marks</th>
                         </tr>
@@ -247,163 +254,160 @@
                     </tbody>
                 </table>
             </div>
-    
+
+            <!-- Save Marks Button -->
             <div class="form-submit">
                 <button type="button" onclick="submitMarks()">Save Marks</button>
             </div>
         </div>
-    
+
         <script>
-        // Fetch course codes dynamically based on semester selection
-        function fetchCourseCodes() {
-            // Fetch the courses assigned to the logged-in teacher
-            fetch(`/get_coursess`)
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    const courseCodeSelect = document.getElementById("course_code");
-        
-                    // Clear existing course code options
-                    courseCodeSelect.innerHTML = "<option value=''>--Select Course Code--</option>";
-        
-                    if (data.courses && data.courses.length > 0) {
-                        // Populate the dropdown with assigned courses
-                        data.courses.forEach(course => {
-                            const option = document.createElement("option");
-                            option.value = course.course_code;
-                            option.textContent = `${course.course_code}`;
-                            courseCodeSelect.appendChild(option);
-                        });
-                    } else {
-                        alert("No courses found.");
-                    }
-                })
-                .catch(error => {
-                    console.error("Error fetching courses:", error);
-                    alert("Failed to fetch courses. Please try again.");
-                });
-        }
-        
-        
-
-// Attach event listener to semester dropdown
-document.getElementById("semester").addEventListener("change", fetchCourseCodes);
-
-
-function fetchResults() {
-    const session = document.getElementById("session").value;
-    const semester = document.getElementById("semester").value;
-    const courseCode = document.getElementById("course_code").value;
-    const examType = document.getElementById("exam_type").value;
-
-    const tableBody = document.getElementById("results-table");
-    tableBody.innerHTML = "";
-
-    if (session && semester && courseCode && examType) {
-        fetch(`/fetch_students?session=${session}&semester=${semester}`)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+            // Fetch course codes dynamically based on semester selection
+            function fetchCourseCodes() {
+                const semester = document.getElementById("semester").value;
+                if (!semester) {
+                    alert("Please select a semester first.");
+                    return;
                 }
-                return response.json();
-            })
-            .then(data => {
-                console.log("Students Data:", data);  // Log the fetched data
-                if (data.students.length === 0) {
-                    tableBody.innerHTML = "<tr><td colspan='4'>No students found</td></tr>";
-                } else {
-                    data.students.forEach(student => {
-                        const row = `
-                            <tr>
-                                <td>${student.roll_number}</td>
-                                <td>${courseCode}</td>
-                                <td>${examType}</td>
-                                <td><input type='number' name='marks_${student.roll_number}' placeholder='Enter Marks'></td>
-                            </tr>`;
-                        tableBody.innerHTML += row;
+
+                // Fetch the courses assigned to the logged-in teacher
+                fetch(`/get_coursess`)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        const courseCodeSelect = document.getElementById("course_code");
+
+                        // Clear existing course code options
+                        courseCodeSelect.innerHTML = "<option value=''>--Select Course Code--</option>";
+
+                        if (data.courses && data.courses.length > 0) {
+                            // Populate the dropdown with assigned courses
+                            data.courses.forEach(course => {
+                                const option = document.createElement("option");
+                                option.value = course.course_code;
+                                option.textContent = `${course.course_code}`;
+                                courseCodeSelect.appendChild(option);
+                            });
+                        } else {
+                            alert("No courses found.");
+                        }
+                    })
+                    .catch(error => {
+                        console.error("Error fetching courses:", error);
+                        alert("Failed to fetch courses. Please try again.");
                     });
+            }
+
+            // Attach event listener to semester dropdown
+            document.getElementById("semester").addEventListener("change", fetchCourseCodes);
+
+            // Fetch students and populate the table
+            function fetchResults() {
+                const session = document.getElementById("session").value;
+                const semester = document.getElementById("semester").value;
+                const courseCode = document.getElementById("course_code").value;
+                const examType = document.getElementById("exam_type").value;
+
+                const tableBody = document.getElementById("results-table");
+                tableBody.innerHTML = "";
+
+                if (session && semester && courseCode && examType) {
+                    fetch(`/fetch_students?session=${session}&semester=${semester}`)
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error(`HTTP error! status: ${response.status}`);
+                            }
+                            return response.json();
+                        })
+                        .then(data => {
+                            console.log("Students Data:", data);  // Log the fetched data
+                            if (data.students.length === 0) {
+                                tableBody.innerHTML = "<tr><td colspan='4'>No students found</td></tr>";
+                            } else {
+                                data.students.forEach(student => {
+                                    const row = `
+                                        <tr>
+                                            <td>${student.roll_number}</td>
+                                            <td>${courseCode}</td>
+                                            <td>${examType}</td>
+                                            <td><input type='number' name='marks_${student.roll_number}' placeholder='Enter Marks'></td>
+                                        </tr>`;
+                                    tableBody.innerHTML += row;
+                                });
+                            }
+                        })
+                        .catch(error => {
+                            console.error("Error fetching students:", error);
+                            alert("Failed to fetch student data. Please try again.");
+                        });
+                } else {
+                    alert("Please fill all fields (Session, Semester, Course Code, Exam Type).");
                 }
-            })
-            .catch(error => {
-                console.error("Error fetching students:", error);
-                alert("Failed to fetch student data. Please try again.");
-            });
-    } else {
-        alert("Please fill all fields (Session, Semester, Course Code, Exam Type).");
-    }
-}
-        
+            }
+
+            // Submit marks to the server
             function submitMarks() {
-    const session = document.getElementById("session").value;
-    const semester = document.getElementById("semester").value;
-    const courseCode = document.getElementById("course_code").value;
-    const examType = document.getElementById("exam_type").value;
+                const session = document.getElementById("session").value;
+                const semester = document.getElementById("semester").value;
+                const courseCode = document.getElementById("course_code").value;
+                const examType = document.getElementById("exam_type").value;
 
-    if (!session || !semester || !courseCode || !examType) {
-        alert("Please fill all fields (Session, Semester, Course Code, Exam Type).");
-        return;
-    }
+                if (!session || !semester || !courseCode || !examType) {
+                    alert("Please fill all fields (Session, Semester, Course Code, Exam Type).");
+                    return;
+                }
 
-    const marks = [];
-    const rows = document.querySelectorAll("#results-table tr");
+                const marks = [];
+                const rows = document.querySelectorAll("#results-table tr");
 
-    rows.forEach(row => {
-        const studentId = row.cells[0].innerText;
-        const marksInput = row.cells[3].querySelector("input").value;
+                rows.forEach(row => {
+                    const studentId = row.cells[0].innerText;
+                    const marksInput = row.cells[3].querySelector("input").value;
 
-        if (marksInput.trim() !== "") {
-            marks.push({
-                roll_number: studentId,
-                session: session,
-                semester: semester,
-                course_code: courseCode,
-                exam_type: examType,
-                marks: parseFloat(marksInput)
-            });
-        }
-    });
-
-    console.log("Marks to submit:", marks);  // Log the data being sent
-
-    if (marks.length === 0) {
-        alert("No marks entered.");
-        return;
-    }
-
-    fetch("/submit_marks", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ marks })
-    })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error("Server error occurred while saving marks.");
-            }
-            return response.json();
-        })
-        .then(data => {
-            if (data.message) {
-                alert(data.message);
-                document.querySelectorAll("#results-table input").forEach(input => {
-                    input.value = "";
+                    if (marksInput.trim() !== "") {
+                        marks.push({
+                            roll_number: studentId,
+                            session: session,
+                            semester: semester,
+                            course_code: courseCode,
+                            exam_type: examType,
+                            marks: parseFloat(marksInput)
+                        });
+                    }
                 });
-            } else {
-                alert("An error occurred while saving marks.");
+
+                console.log("Marks to submit:", marks);  // Log the data being sent
+
+                if (marks.length === 0) {
+                    alert("No marks entered.");
+                    return;
+                }
+
+                fetch("/submit_marks", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ marks })
+})
+    .then(response => response.json())
+    .then(data => {
+        console.log("Response:", data);  // Log the response
+        if (data.error) {
+            alert(data.error);
+        } else {
+            alert(data.message);
+        }
+    })
+    .catch(error => {
+        console.error("Error:", error);
+        alert("Failed to submit marks. Please try again later.");
+    });
             }
-        })
-        .catch(error => {
-            console.error("Error saving marks:", error);
-            alert("Failed to submit marks. Please try again later.");
-        });
-}
         </script>
-        
-        
-    </body>
-    
-    </html>
-    
+    </div>
+</body>
+
+</html>
