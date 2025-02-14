@@ -14,7 +14,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 import mysql.connector
 import secrets
 
-
+from fast import execute_query
 
 app = Flask(__name__)
 app.secret_key = secrets.token_hex(16)
@@ -620,134 +620,14 @@ def view_results():
     return render_template('view_results.html', user_type=user_type)
 
   
-  
-
-
-
-@app.route('/view_attendance', methods=['GET', 'POST'])
+@app.route('/view_attendance')
 def view_attendance():
-    # Check if the user is logged in
     if 'loggedin' not in session:
-        return redirect(url_for('login'))
-    
+        return redirect(url_for('login')) 
     user_type = session.get('user_type')
-    attendance_data = None
 
-    if request.method == 'POST':
-        # Retrieve and sanitize form inputs
-        selected_session = request.form.get('session', '').strip()
-        semester = request.form.get('semester', '').strip()
-        course_code = request.form.get('course_code', '').strip()
-
-        # Debug: Print form data
-        print(f"Form Data - Session: {selected_session}, Semester: {semester}, Course Code: {course_code}")
-
-        # Validate the input fields
-        if not selected_session or not semester or not course_code:
-            flash("All fields are required.", "error")
-            return redirect(url_for('view_attendance'))
-
-        try:
-            # Define the SQL query
-            query = """
-                WITH class_counts AS (
-                 SELECT 
-                        course_code,
-                        COUNT(*) AS total_classes
-                    FROM 
-                        classes
-                    WHERE 
-                        session = %s 
-                        AND semester = %s
-                        AND course_code = %s
-                    GROUP BY 
-                        course_code
-                ),
-                student_attendance AS (
-                    SELECT 
-                        sca.roll_number,
-                        c.course_code,
-                        c.class_date,
-                        c.start_time,
-                        c.end_time,
-                        -- Calculate total time the student was present
-                        SUM(
-                            TIMESTAMPDIFF(
-                                MINUTE, 
-                                GREATEST(c.start_time, u.timein), 
-                                LEAST(c.end_time, u.timeout)
-                            )
-                        ) AS total_minutes_present,
-                        -- Calculate total duration of the class
-                        TIMESTAMPDIFF(MINUTE, c.start_time, c.end_time) AS total_class_duration
-                    FROM 
-                        student_course_assign sca
-                    JOIN 
-                        classes c ON sca.course_code = c.course_code 
-                    LEFT JOIN 
-                        users_logs u ON sca.roll_number = u.serialnumber AND DATE(u.checkindate) = c.class_date
-                    WHERE 
-                        sca.session = %s 
-                        AND sca.semester = %s
-                        AND sca.course_code = %s
-                    GROUP BY 
-                        sca.roll_number, c.course_code, c.class_date
-                ),
-                attended_classes AS (
-                    SELECT 
-                        roll_number,
-                        course_code,
-                        COUNT(CASE 
-                            WHEN total_minutes_present >= (total_class_duration * 3 / 4) THEN 1 
-                        END) AS attended_classes
-                    FROM 
-                        student_attendance
-                    GROUP BY 
-                        roll_number, course_code
-                )
-                SELECT 
-                    ac.roll_number,
-                    ac.course_code,
-                    COALESCE(cc.total_classes, 0) AS total_classes,
-                    COALESCE(ac.attended_classes, 0) AS attended_classes,
-                    CASE 
-                        WHEN cc.total_classes > 0 THEN ROUND((ac.attended_classes * 100.0 / cc.total_classes), 2)
-                        ELSE 0 
-                    END AS attendance_percentage
-                FROM 
-                    attended_classes ac
-                JOIN 
-                    class_counts cc ON ac.course_code = cc.course_code
-                WHERE
-                    ac.course_code = %s;
-            """
-
-            # Debug: Print the query and parameters
-            print(f"Query: {query}")
-            print(f"Params: {selected_session}, {semester}, {course_code}, {selected_session}, {semester}, {course_code}, {course_code}")
-
-            # Execute the query with fetch=True to retrieve results
-            attendance_data = execute_query(query, (
-                selected_session, semester, course_code,
-                selected_session, semester, course_code,
-                course_code
-            ), fetch=True)
-
-            # Debug: Print the query result
-            print(f"Attendance Data: {attendance_data}")
-
-            # Handle empty results
-            if not attendance_data:
-                flash("No attendance records available for the selected criteria.", "info")
-
-        except Exception as e:
-            # Log and display any errors
-            print(f"Database Error: {str(e)}")
-            flash(f"An error occurred while fetching attendance data: {str(e)}", "error")
-
-    # Render the template with attendance data
-    return render_template('view_attendance.html', attendance_data=attendance_data, user_type=user_type)
-
+   
+    return render_template('view_attendance.html', user_type=user_type)
 
 
 @app.route('/change_password', methods=['GET', 'POST'])

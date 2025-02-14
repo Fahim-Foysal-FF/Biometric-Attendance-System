@@ -8,118 +8,81 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css"
         integrity="sha512-Kc323vGBEqzTmouAECnVceyQqyqdsSiqLQISBL29aUW4U/M7pSPA/gEUZQqv1cwx4OnYxTxve5UMg5GT6L4JJg=="
         crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <title>Manage Marks</title>
     <style>
-
-    
-           
-         
-            .Gt
-            {
-                font-size: 20px;
-                margin-left: 40px;
-                display: none;
-            }
-            .GR:hover .Gt
-            {
-               display: block;
-            }
-            #or 
-            {
-                text-align: center;
-            }
-      
         body {
-           
-            background-color: #f4f4f9;
             margin: 0;
             padding: 0;
+            background-color: #f4f4f9;
         }
-
-        .container {
-            width: 80%;
-            margin: 30px auto;
-            background-color: white;
+        .form-container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 100px auto;
+            background: white;
             padding: 20px;
+            border-radius: 10px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
-
-        .header {
+        .form-header {
             text-align: center;
             margin-bottom: 20px;
         }
-
-        .header h1 {
-            font-size: 2.5em;
+        .form-header h3 {
+            margin: 0;
+            font-size: 24px;
             color: #333;
         }
-
-        .filters {
+        .form-row {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 30px;
+            gap: 15px;
+            margin-bottom: 20px;
         }
-
-        .filter-group {
-            width: 48%;
+        .form-group {
+            flex: 1;
         }
-
-        .filter-group label {
-            font-size: 1.1em;
-            margin-bottom: 8px;
+        .form-group label {
             display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
         }
-
-        .filter-group select {
+        .form-group select {
             width: 100%;
             padding: 10px;
+            font-size: 16px;
             border: 1px solid #ccc;
             border-radius: 5px;
-            font-size: 1em;
         }
-
-        .filter-group button {
-            display: block;
+        table {
             width: 100%;
-            padding: 12px;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        table th, table td {
+            padding: 10px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+        table th {
+            background-color: #f4f4f4;
+        }
+        .form-submit {
+            text-align: center;
+            margin-top: 20px;
+        }
+        .form-submit button {
+            padding: 10px 20px;
+            font-size: 16px;
             background-color: #4CAF50;
             color: white;
-            font-size: 1.1em;
             border: none;
             border-radius: 5px;
             cursor: pointer;
-            margin-top: 10px;
         }
-
-        .filter-group button:hover {
+        .form-submit button:hover {
             background-color: #45a049;
         }
-
-        .attendance-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 30px;
-        }
-
-        .attendance-table th,
-        .attendance-table td {
-            padding: 12px;
-            text-align: left;
-            border-bottom: 1px solid #ddd;
-        }
-
-        .attendance-table th {
-            background-color: #f4f4f4;
-            color: #333;
-        }
-
-        .no-results {
-            text-align: center;
-            color: #888;
-            font-size: 1.5em;
-            margin-top: 30px;
-        }
-        
-        
     </style>
 </head>
 
@@ -153,10 +116,6 @@
                 <li>
                     <a href="{{ url_for('feedback') }}" id="s1"><span><i class="fa-solid fa-calendar-days"></i></span>
                         <span>Feedback</span></a>
-                </li>
-                <li>
-                    <a href="{{ url_for('teacher_course_assign') }}" id="s1"><span><i class="fa-solid fa-calendar-days"></i></span>
-                        <span>Teacher Course Assign</span></a>
                 </li>
                 
                 <li>
@@ -229,10 +188,14 @@
                             <a href="{{ url_for('add_course') }}" id="s1"><span><i class="fa-solid fa-calendar-days"></i></span>
                                 <span>ADD Course</span></a>
                     </li> 
+                        <li>
+                            <a href="{{ url_for('student_course_assign') }}" id="s1"><span><i class="fa-solid fa-calendar-days"></i></span>
+                                <span>Student Course Assign</span></a>
+                    </li> 
                     <li>
-                        <a href="{{ url_for('student_course_assign') }}" id="s1"><span><i class="fa-solid fa-calendar-days"></i></span>
-                            <span>Student Course Assign</span></a>
-                </li> 
+                        <a href="{{ url_for('teacher_course_assign') }}" id="s1"><span><i class="fa-solid fa-calendar-days"></i></span>
+                            <span>Teacher Course Assign</span></a>
+                    </li>
                         <li>
                             <a href="{{ url_for('change_password') }}" id="s2"><span><i class='fas fa-users'></i></span>
                                 <span>Change Password</span></a>
@@ -241,7 +204,31 @@
                             <a href="{{ url_for('notice_board') }}" id="s4"><span><i class="fa-sharp fa-solid fa-bell"></i></span>
                                 <span>Notice Board</span></a>
                         </li>
+                        {% elif user_type == 'staff' %}
                     
+                        <li>
+                            <a href="{{ url_for('staff_profile') }}" id="s1"><span><i class="fa-solid fa-calendar-days"></i></span>
+                                <span>Profile</span></a>
+                        </li>
+                        <li>
+                            <a href="{{ url_for('edit_profile') }}" id="s1"><span><i class="fa-solid fa-calendar-days"></i></span>
+                                <span>Edit Profile</span></a>
+                        </li>
+                        <li>
+                            <a href="{{ url_for('add_notice') }}" id="s1"><span><i class="fa-solid fa-calendar-days"></i></span>
+                                <span>ADD Notice</span></a>
+                        </li>
+                         
+                        <li>
+                            <a href="{{ url_for('change_password') }}" id="s2"><span><i class='fas fa-users'></i></span>
+                                <span>Change Password</span></a>
+                        </li>
+                        <li>
+                            <a href="{{ url_for('notice_board') }}" id="s4"><span><i class="fa-sharp fa-solid fa-bell"></i></span>
+                                <span>Notice Board</span></a>
+                        </li>
+            
+                    </ul>    
                 
                 {% endif %}
             </ul>
@@ -255,6 +242,7 @@
             </ul>
         </div>
     </div>
+    
 
     <div class="main-content">
         <header>
@@ -280,20 +268,37 @@
             </div>
         </header>
 
-        <main>
-            <div class="container">
-                <div class="header">
-                    <h1>View Attendance</h1>
-                    <p>Select the filters below to view the attendance records.</p>
-                </div>
-
-                <!-- Filter Section -->
-                <div class="filters">
-                    <!-- Year & Semester Filter -->
-                    <div class="filter-group">
-                        <label for="year-semester">Select Year & Semester:</label>
-                        <select id="year-semester" name="year-semester" onchange="loadCourses()">
-                            <option value="">--Select Year & Semester--</option>
+        <div class="form-container">
+            <div class="form-header">
+                <h3>View Attendance</h3>
+            </div>
+            <form method="POST" action="{{ url_for('view_attendance') }}">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="department">Department</label>
+                        <select id="department" name="department">
+                            <option value="">--Select Department--</option>
+                            <option value="CSE">CSE</option>
+                            <option value="EEE">EEE</option>
+                            <option value="BBA">BBA</option>
+                            <option value="ME">ME</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="session">Session</label>
+                        <select id="session" name="session">
+                            <option value="">--Select Session--</option>
+                            <option value="2023-24">2023-2024</option>
+                            <option value="2022-23">2022-2023</option>
+                            <option value="2021-22">2021-2022</option>
+                            <option value="2020-21">2020-2021</option>
+                            <option value="2019-20">2019-2020</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="semester">Semester</label>
+                        <select id="semester" name="semester">
+                            <option value="">--Select Semester--</option>
                             <option value="1-1">1-1</option>
                             <option value="1-2">1-2</option>
                             <option value="2-1">2-1</option>
@@ -304,125 +309,109 @@
                             <option value="4-2">4-2</option>
                         </select>
                     </div>
-
-                    <!-- Course Code Filter (Initially empty) -->
-                    <div class="filter-group">
-                        <label for="course-code">Select Course Code:</label>
-                        <select id="course-code" name="course-code" disabled>
-                            <option value="">--Select Course--</option>
+                    <div class="form-group">
+                        <label for="course_code">Course Code</label>
+                        <select id="course_code" name="course_code">
+                            <option value="">--Select Course Code--</option>
                         </select>
                     </div>
-
-                    <!-- Submit Button to Filter Attendance -->
-                    <div class="filter-group">
-                        <button onclick="viewAttendance()">View Attendance</button>
-                    </div>
                 </div>
-
-                <!-- Attendance Table Section -->
-                <div id="attendanceSection" class="attendance-section">
-                    <table class="attendance-table" id="attendanceTable">
-                        <thead>
-                            <tr>
-                                <th>Course Code</th>
-                                <th>Student Name</th>
-                                <th>Total Classes</th>
-                                <th>Classes Attended</th>
-                                <th>Attendance Percentage</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr class="no-results">
-                                <td colspan="5">No attendance records available. Please apply filters to view data.</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                <div class="form-submit">
+                    <button type="submit">View Attendance</button>
                 </div>
+            </form>
+
+            
+    
+            <!-- Attendance Table Section -->
+            <div id="attendanceSection">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Roll Number</th>
+                            <th>Course Code</th>
+                            <th>Total Classes</th>
+                            <th>Classes Attended</th>
+                            <th>Attendance Percentage</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if attendance_data %}
+                            {% for item in attendance_data %}
+                                <tr>
+                                    <td>{{ item.roll_number }}</td>
+                                    <td>{{ item.course_code }}</td>
+                                    <td>{{ item.total_classes }}</td>
+                                    <td>{{ item.attended_classes }}</td>
+                                    <td>{{ item.attendance_percentage }}%</td>
+                                </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr><td colspan="5">No attendance records available.</td></tr>
+                        {% endif %}
+                    </tbody>
+                </table>
             </div>
-        </main>
-    </div>
+        </div>
+    
+        <script>
+// Fetch course codes dynamically based on semester selection
+function fetchCourses() {
+    const semester = document.getElementById("semester").value;
+    const department = document.getElementById("department").value;
 
-    <script>
-        // Function to load courses based on selected Year & Semester
-        function loadCourses() {
-            const yearSemester = document.getElementById('year-semester').value;
-            const courseSelect = document.getElementById('course-code');
+    // Ensure both semester and department are selected
+    if (!semester || !department) {
+        console.log("Semester and department must be selected before fetching courses.");
+        return;
+    }
 
-            if (yearSemester) {
-                courseSelect.disabled = false;
-                const courses = getCoursesByYearSemester(yearSemester);
-                courseSelect.innerHTML = '<option value="">--Select Course--</option>';
-                courses.forEach(course => {
-                    const option = document.createElement('option');
-                    option.value = course.code;
-                    option.textContent = `${course.code} - ${course.name}`;
-                    courseSelect.appendChild(option);
-                });
-            } else {
-                courseSelect.disabled = true;
+    const url = `/get_courses?semester=${encodeURIComponent(semester)}&department=${encodeURIComponent(department)}`;
+
+    console.log("Fetching courses from:", url);  // Debugging log
+
+    fetch(url)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
-        }
+            return response.json();
+        })
+        .then(data => {
+            const courseCodeDropdown = document.getElementById("course_code");
 
-        // Simulated function to fetch courses based on Year-Semester
-        function getCoursesByYearSemester(yearSemester) {
-            const coursesDatabase = {
-                '1-1': [
-                    { code: 'CS101', name: 'Introduction to Programming' },
-                    { code: 'MATH101', name: 'Mathematics 1' }
-                ],
-                '1-2': [
-                    { code: 'CS102', name: 'Data Structures' },
-                    { code: 'PHYS101', name: 'Physics 1' }
-                ],
-                // Add more data for other year-semester combinations...
-            };
-            return coursesDatabase[yearSemester] || [];
-        }
+            // Clear existing course options
+            courseCodeDropdown.innerHTML = "<option value=''>--Select Course Code--</option>";
 
-        // Function to view attendance after applying filters
-        function viewAttendance() {
-            const yearSemester = document.getElementById('year-semester').value;
-            const courseCode = document.getElementById('course-code').value;
-
-            if (!yearSemester || !courseCode) {
-                alert("Please select both Year-Semester and Course Code.");
-                return;
-            }
-
-            const attendanceRecords = getAttendanceByCourse(yearSemester, courseCode);
-            const tableBody = document.getElementById('attendanceTable').querySelector('tbody');
-            tableBody.innerHTML = ''; // Clear previous rows
-
-            if (attendanceRecords.length === 0) {
-                const noResultsRow = document.createElement('tr');
-                noResultsRow.classList.add('no-results');
-                noResultsRow.innerHTML = '<td colspan="5">No attendance records found.</td>';
-                tableBody.appendChild(noResultsRow);
+            if (data.error) {
+                alert(data.error);
             } else {
-                attendanceRecords.forEach(record => {
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td>${record.courseCode}</td>
-                        <td>${record.studentName}</td>
-                        <td>${record.totalClasses}</td>
-                        <td>${record.classesAttended}</td>
-                        <td>${record.attendancePercentage}%</td>
-                    `;
-                    tableBody.appendChild(row);
+                // Populate the course dropdown with fetched courses
+                data.courses.forEach(course => {
+                    const option = document.createElement("option");
+                    option.value = course.course_code;
+                    option.textContent = `${course.course_code}`;
+                    courseCodeDropdown.appendChild(option);
                 });
             }
-        }
+        })
+        .catch(error => {
+            console.error("Error fetching courses:", error);
+            alert("Failed to fetch courses. Please try again.");
+        });
+}
 
-        // Simulated function to fetch attendance records
-        function getAttendanceByCourse(yearSemester, courseCode) {
-            const attendanceDatabase = [
-                { courseCode: 'CS101', studentName: 'John Doe', totalClasses: 30, classesAttended: 28, attendancePercentage: 93, semester: '1-1' },
-                { courseCode: 'CS102', studentName: 'Jane Smith', totalClasses: 30, classesAttended: 25, attendancePercentage: 83, semester: '1-2' },
-                { courseCode: 'MATH101', studentName: 'Alice Brown', totalClasses: 30, classesAttended: 30, attendancePercentage: 100, semester: '1-1' }
-            ];
-            return attendanceDatabase.filter(record => record.semester === yearSemester && record.courseCode === courseCode);
-        }
-    </script>
+// Ensure event listeners trigger `fetchCourses` correctly
+document.getElementById("semester").addEventListener("change", fetchCourses);
+document.getElementById("department").addEventListener("change", fetchCourses);
+
+
+
+
+</script>
+    
+    
 </body>
-
+    
 </html>
+    
