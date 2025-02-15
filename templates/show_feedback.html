@@ -1,102 +1,58 @@
-...<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
     <link rel="stylesheet" href="{{ url_for('static', filename='form_style.css') }}">
-    
-    
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css"
         integrity="sha512-Kc323vGBEqzTmouAECnVceyQqyqdsSiqLQISBL29aUW4U/M7pSPA/gEUZQqv1cwx4OnYxTxve5UMg5GT6L4JJg=="
         crossorigin="anonymous" referrerpolicy="no-referrer" />
-        <style>
-           
-         
-            .Gt
-            {
-                font-size: 20px;
-                margin-left: 40px;
-                display: none;
-            }
-            .GR:hover .Gt
-            {
-               display: block;
-            }
-            #or 
-            {
-                text-align: center;
-            }
-        </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .Gt {
+            font-size: 20px;
+            margin-left: 40px;
+            display: none;
+        }
+        .GR:hover .Gt {
+            display: block;
+        }
+        #or {
+            text-align: center;
+        }
+        canvas {
+            max-width: 600px;
+            margin: 20px auto;
+            display: block;
+        }
+    </style>
 </head>
-
 <body>
+    <!-- Sidebar and Header Code -->
     <input type="checkbox" id="nav-toggle">
     <div class="slidebar">
         <div class="slidebar-brand">
-            <h2>Chairman profile</h2>
+            <h2>Chairman Profile</h2>
         </div>
-    
         <div class="slidebar-manu">
             <ul>
-                <li>
-                    <a href="{{ url_for('chairman_profile') }}" id="s1"><span><i class="fa-solid fa-calendar-days"></i></span>
-                        <span>Profile</span></a>
-                </li>
-                <li>
-                    <a href="{{ url_for('edit_profile') }}" id="s1"><span><i class="fa-solid fa-calendar-days"></i></span>
-                        <span> Edit Profile</span></a>
-                </li>
-                <li>
-                    <a href="{{ url_for('view_results') }}" id="s1"><span><i class="fa-solid fa-calendar-days"></i></span>
-                        <span>View Result</span></a>
-                </li>           
-                <li>
-                <a href="{{ url_for('view_attendance') }}" id="s1"><span><i class="fa-solid fa-calendar-days"></i></span>
-                        <span>View Attendance</span></a>
-                </li> 
-                <li>
-                    <a href="{{ url_for('show_feedback') }}" id="s1"><span><i class="fa-solid fa-calendar-days"></i></span>
-                        <span>Show Feedback</span></a>
-                </li>
-                <li>
-                
-                    <a href="{{ url_for('add_course') }}" id="s1"><span><i class="fa-solid fa-calendar-days"></i></span>
-                         <span>ADD Course</span></a>
-                </li> 
-                <li>
-                    <a href="{{ url_for('student_course_assign') }}" id="s1"><span><i class="fa-solid fa-calendar-days"></i></span>
-                        <span>Student Course Assign</span></a>
-                </li>
-                <li>
-                    <a href="{{ url_for('teacher_course_assign') }}" id="s1"><span><i class="fa-solid fa-calendar-days"></i></span>
-                        <span>Teacher Course Assign</span></a>
-                </li> 
-                <li>
-                    <a href="{{ url_for('change_password') }}" id="s2"><span><i class='fas fa-users'></i></span>
-                        <span>Change Password</span></a>
-                </li>
-                <li>
-                    <a href="{{ url_for('notice_board') }}" id="s4"><span><i class="fa-sharp fa-solid fa-bell"></i></span>
-                        <span>Notice Board</span></a>
-                </li>
-    
+                <li><a href="{{ url_for('chairman_profile') }}" id="s1"><span><i class="fa-solid fa-calendar-days"></i></span><span>Profile</span></a></li>
+                <li><a href="{{ url_for('edit_profile') }}" id="s1"><span><i class="fa-solid fa-calendar-days"></i></span><span>Edit Profile</span></a></li>
+                <li><a href="{{ url_for('view_results') }}" id="s1"><span><i class="fa-solid fa-calendar-days"></i></span><span>View Result</span></a></li>
+                <li><a href="{{ url_for('view_attendance') }}" id="s1"><span><i class="fa-solid fa-calendar-days"></i></span><span>View Attendance</span></a></li>
+                <li><a href="{{ url_for('show_feedback') }}" id="s1"><span><i class="fa-solid fa-calendar-days"></i></span><span>Show Feedback</span></a></li>
+                <li><a href="{{ url_for('add_course') }}" id="s1"><span><i class="fa-solid fa-calendar-days"></i></span><span>Add Course</span></a></li>
+                <li><a href="{{ url_for('student_course_assign') }}" id="s1"><span><i class="fa-solid fa-calendar-days"></i></span><span>Student Course Assign</span></a></li>
+                <li><a href="{{ url_for('teacher_course_assign') }}" id="s1"><span><i class="fa-solid fa-calendar-days"></i></span><span>Teacher Course Assign</span></a></li>
+                <li><a href="{{ url_for('change_password') }}" id="s2"><span><i class='fas fa-users'></i></span><span>Change Password</span></a></li>
+                <li><a href="{{ url_for('notice_board') }}" id="s4"><span><i class="fa-sharp fa-solid fa-bell"></i></span><span>Notice Board</span></a></li>
             </ul>
-    
             <ul class="Special">
-    
-                <li>
-                    <a href="{{ url_for('logout') }}">
-                        <span><i class="fa fa-sign-out"></i></span>
-                        <span>Log Out</span>
-                    </a>
-                </li>
-    
+                <li><a href="{{ url_for('logout') }}"><span><i class="fa fa-sign-out"></i></span><span>Log Out</span></a></li>
             </ul>
         </div>
     </div>
-    
-    
+
     <div class="main-content">
         <header>
             <h1 class="menu">
@@ -104,20 +60,15 @@
                     <i class="fa-solid fa-bars"></i>
                 </label>
             </h1>
-    
-    
             <div class="logo">
                 <img src="static/justlogo.jpg" width="70px" height="70px" alt="">
             </div>
             <div>
-                <h3 id="or">Jashore University of Science and Tecnology</h3>
+                <h3 id="or">Jashore University of Science and Technology</h3>
             </div>
-    
             <div class="icon">
                 <ul>
-                    <li>
-                        <a href="Edit.html"><i class="fa fa-user"></i></a>
-                    </li>
+                    <li><a href="Edit.html"><i class="fa fa-user"></i></a></li>
                 </ul>
             </div>
         </header>
@@ -130,17 +81,35 @@
                         </label>
                     </h1>
                 </header>
-        
                 <div class="form-header">
                     <h2>Feedback Data</h2>
                 </div>
-        
+
+                <!-- Course Filter Form -->
+                <form method="POST" style="margin-bottom: 20px;">
+                    <label for="course">Select Course:</label>
+                    <select name="course" id="course" required>
+                        <option value="">--Select Course--</option>
+                        {% for course in courses %}
+                            <option value="{{ course['course_code'] }}" 
+                                {% if selected_course == course['course_code'] %}selected{% endif %}>
+                                {{ course['course_code'] }} - {{ course['course_name'] }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                    <button type="submit">Submit</button>
+                </form>
+
+                <!-- Pie Chart -->
+                {% if chart_data %}
+                    <canvas id="feedbackChart"></canvas>
+                {% endif %}
+
+                <!-- Feedback Table -->
                 <table>
                     <thead>
                         <tr>
-                            <th>Roll Number</th>
                             <th>Course Code</th>
-                            <th>Course Name</th>
                             <th>Rating</th>
                             <th>Comment</th>
                         </tr>
@@ -149,30 +118,67 @@
                         {% if feedbacks %}
                             {% for feedback in feedbacks %}
                                 <tr>
-                                    <td>{{ feedback['roll_number'] }}</td>
                                     <td>{{ feedback['course_code'] }}</td>
-                                    <td>{{ feedback['course_name'] }}</td>
                                     <td>{{ feedback['rating'] }}</td>
                                     <td>{{ feedback['comment'] }}</td>
                                 </tr>
                             {% endfor %}
                         {% else %}
                             <tr>
-                                <td colspan="5" style="text-align: center;">No feedback available</td>
+                                <td colspan="3" style="text-align: center;">No feedback available</td>
                             </tr>
                         {% endif %}
                     </tbody>
                 </table>
             </div>
-    
         </main>
-    
     </div>
-    
-    <div>
-    </div>
-    
-</body>
 
+    <!-- JavaScript for Pie Chart -->
+    {% if chart_data %}
+    <script>
+        const ctx = document.getElementById('feedbackChart').getContext('2d');
+        const feedbackChart = new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: {{ chart_data.labels | tojson }},
+                datasets: [{
+                    label: 'Ratings Distribution',
+                    data: {{ chart_data.counts | tojson }},
+                    backgroundColor: [
+                        'rgba(255, 99, 132, 0.6)',
+                        'rgba(54, 162, 235, 0.6)',
+                        'rgba(255, 206, 86, 0.6)',
+                        'rgba(75, 192, 192, 0.6)',
+                        'rgba(153, 102, 255, 0.6)'
+                    ],
+                    borderColor: [
+                        'rgba(255, 99, 132, 1)',
+                        'rgba(54, 162, 235, 1)',
+                        'rgba(255, 206, 86, 1)',
+                        'rgba(75, 192, 192, 1)',
+                        'rgba(153, 102, 255, 1)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(tooltipItem) {
+                                return `Count: ${tooltipItem.raw}`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+    {% endif %}
+</body>
 </html>
-...

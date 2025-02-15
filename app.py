@@ -1469,7 +1469,6 @@ def submit_feedback():
     try:
         # Get the logged-in user's email from the session
         email = session.get('email')
-
         if not email:
             flash("You are not logged in or your session has expired.", "error")
             return redirect(url_for('login'))
@@ -1477,11 +1476,9 @@ def submit_feedback():
         # Fetch the student's roll number based on the email
         query = "SELECT roll_number FROM userss WHERE email = %s"
         result = execute_query(query, (email,), fetch=True)
-
         if not result:
             flash("Unable to fetch your roll number. Please contact the administrator.", "error")
             return redirect(url_for('feedback'))
-
         roll_number = result[0]['roll_number']  # Extract roll number from the query result
 
         # Get data from the form
@@ -1503,6 +1500,32 @@ def submit_feedback():
             flash("Invalid rating value!", "error")
             return redirect(url_for('feedback'))
 
+        # Validate that the course_code belongs to the student's enrolled courses
+        enrolled_courses_query = """
+            SELECT course_code 
+            FROM student_course_assign 
+            WHERE roll_number = %s
+        """
+        enrolled_courses = execute_query(enrolled_courses_query, (roll_number,), fetch=True)
+        enrolled_course_codes = [course['course_code'] for course in enrolled_courses]
+
+        if course_code not in enrolled_course_codes:
+            flash("You are not enrolled in the selected course and cannot provide feedback for it.", "error")
+            return redirect(url_for('feedback'))
+
+        # Check if the student has already submitted feedback for this course
+        feedback_check_query = """
+            SELECT COUNT(*) AS feedback_count
+            FROM course_feedback
+            WHERE roll_number = %s AND course_code = %s
+        """
+        feedback_check_result = execute_query(feedback_check_query, (roll_number, course_code), fetch=True)
+        feedback_count = feedback_check_result[0]['feedback_count']
+
+        if feedback_count > 0:
+            flash("You have already submitted feedback for this course.", "error")
+            return redirect(url_for('feedback'))
+
         # Insert feedback into the database
         feedback_query = """
             INSERT INTO course_feedback (roll_number, course_code, rating, comment)
@@ -1512,17 +1535,16 @@ def submit_feedback():
 
         flash("Feedback submitted successfully!", "success")
         return redirect(url_for('feedback'))
+
     except Exception as e:
         print(f"Error submitting feedback: {e}")
         flash("Failed to submit feedback. Please try again.", "error")
         return redirect(url_for('feedback'))
 
-
 @app.route('/feedback', methods=['GET'])
 def feedback():
     # Get the logged-in user's email from the session
     email = session.get('email')
-
     if not email:
         flash("You are not logged in or your session has expired.", "error")
         return redirect(url_for('login'))
@@ -1542,22 +1564,65 @@ def feedback():
 
 
 
-@app.route('/show_feedback', methods=['GET'])
+@app.route('/show_feedback', methods=['GET', 'POST'])
 def show_feedback():
     try:
-        # Fetch feedback data from the database
-        query = """
-            SELECT cf.roll_number, cf.course_code, c.course_name, cf.rating, cf.comment
-            FROM course_feedback cf
-            INNER JOIN course c ON cf.course_code = c.course_code
-        """
-        feedbacks = execute_query(query, fetch=True)
+        # Fetch all courses for the dropdown
+        courses_query = "SELECT course_code, course_name FROM course"
+        courses = execute_query(courses_query, fetch=True)
 
-        return render_template('show_feedback.html', feedbacks=feedbacks)
+        if request.method == 'POST':
+            # Get the selected course code from the form
+            selected_course = request.form.get('course')
+            if not selected_course:
+                flash("Please select a course.", "error")
+                return redirect(url_for('show_feedback'))
+
+            # Fetch feedback data for the selected course (excluding roll numbers)
+            feedback_query = """
+                SELECT 
+                    cf.course_code,
+                    c.course_name,
+                    cf.rating,
+                    cf.comment
+                FROM 
+                    course_feedback cf
+                INNER JOIN 
+                    course c ON cf.course_code = c.course_code
+                WHERE 
+                    cf.course_code = %s
+            """
+            feedback_data = execute_query(feedback_query, (selected_course,), fetch=True)
+
+            if not feedback_data:
+                flash("No feedback available for the selected course.", "info")
+
+            # Prepare data for the pie chart
+            rating_counts = {}
+            for feedback in feedback_data:
+                rating = feedback['rating']
+                rating_counts[rating] = rating_counts.get(rating, 0) + 1
+
+            chart_data = {
+                "labels": [f"Rating {rating}" for rating in rating_counts.keys()],
+                "counts": list(rating_counts.values())
+            }
+
+            return render_template(
+                'show_feedback.html',
+                courses=courses,
+                feedbacks=feedback_data,
+                chart_data=chart_data,
+                selected_course=selected_course
+            )
+
+        # For GET requests, just display the form with the course dropdown
+        return render_template('show_feedback.html', courses=courses)
+
     except Exception as e:
-        print(f"Error fetching feedback: {e}")
-        flash("Failed to load feedback data. Please try again later.", "error")
-        return render_template('show_feedback.html', feedbacks=[])
+        print(f"Error fetching feedback data: {e}")
+        flash("Failed to fetch feedback data. Please try again.", "error")
+        return redirect(url_for('chairman_profile'))
 
 
 @app.route('/add_class', methods=['GET', 'POST'])

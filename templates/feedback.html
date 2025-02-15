@@ -133,7 +133,7 @@
                         <select name="course" id="course" required>
                             <option value="">--Select Course--</option>
                             {% for course in courses %}
-                                <option value="{{ course['course_code'] }}">{{ course['course_code'] }}</option>
+                                <option value="{{ course['course_code'] }}">{{ course['course_code'] }} - {{ course['course_name'] }}</option>
                             {% endfor %}
                         </select>
                     </div>
@@ -159,6 +159,7 @@
                         <button type="submit">Submit Feedback</button>
                     </div>
                 </form>
+                <p style="font-size: 14px; color: #666;">Note: You can only submit feedback once per course.</p>
             </div>
             </main>
         </body>
