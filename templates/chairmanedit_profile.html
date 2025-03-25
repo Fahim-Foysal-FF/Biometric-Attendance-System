@@ -105,6 +105,39 @@
         #or {
             text-align: center;
         }
+        .slidebar {
+            width: 250px; /* Keep the width the same */
+            height: 100vh; /* Set height to 100% of the viewport */
+            
+            overflow-y: auto; /* Enable vertical scrolling */
+            position: fixed; /* Fix the sidebar in place */
+            top: 0;
+            left: 0;
+        }
+        
+        /* Optional: Style the scrollbar */
+        .slidebar::-webkit-scrollbar {
+            width: 8px; /* Width of the scrollbar */
+        }
+        
+        .slidebar::-webkit-scrollbar-track {
+           
+        }
+        
+        .slidebar::-webkit-scrollbar-thumb {
+           
+            border-radius: 4px; /* Rounded corners */
+        }
+        
+        .slidebar::-webkit-scrollbar-thumb:hover {
+            
+        }
+        
+        /* Adjust main content margin */
+        .main-content {
+            margin-left: 250px; /* Match the sidebar width */
+            transition: all 0.3s ease;
+        }
     </style>
 </head>
 
@@ -124,6 +157,10 @@
                 <li>
                     <a href="{{ url_for('edit_profile') }}" id="s1"><span><i class="fa-solid fa-calendar-days"></i></span>
                         <span> Edit Profile</span></a>
+                </li>
+                <li>
+                    <a href="{{ url_for('chairman_approvals') }}" id="s1"><span><i class="fa-solid fa-calendar-days"></i></span>
+                        <span>Approval</span></a>
                 </li>
                 <li>
                     <a href="{{ url_for('view_results') }}" id="s1"><span><i class="fa-solid fa-calendar-days"></i></span>
@@ -160,16 +197,7 @@
     
             </ul>
     
-            <ul class="Special">
-    
-                <li>
-                    <a href="{{ url_for('logout') }}">
-                        <span><i class="fa fa-sign-out"></i></span>
-                        <span>Log Out</span>
-                    </a>
-                </li>
-    
-            </ul>
+            
         </div>
     </div>
     
@@ -193,7 +221,10 @@
             <div class="icon">
                 <ul>
                     <li>
-                        <a href="Edit.html"><i class="fa fa-user"></i></a>
+                        <a href="{{ url_for('logout') }}">
+                            <span><i class="fa fa-sign-out"></i></span>
+                            <span>Log Out</span>
+                        </a>
                     </li>
                 </ul>
             </div>

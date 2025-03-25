@@ -1,33 +1,14 @@
-...<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
     <link rel="stylesheet" href="{{ url_for('static', filename='form_style.css') }}">
-    
-    
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css"
         integrity="sha512-Kc323vGBEqzTmouAECnVceyQqyqdsSiqLQISBL29aUW4U/M7pSPA/gEUZQqv1cwx4OnYxTxve5UMg5GT6L4JJg=="
         crossorigin="anonymous" referrerpolicy="no-referrer" />
-        <style>
-           
-         
-            .Gt
-            {
-                font-size: 20px;
-                margin-left: 40px;
-                display: none;
-            }
-            .GR:hover .Gt
-            {
-               display: block;
-            }
-            #or 
-            {
-                text-align: center;
-            }
-        </style>
+    <title>Course Feedback</title>
 </head>
 
 <body>
@@ -36,56 +17,64 @@
         <div class="slidebar-brand">
             <h2>Student profile</h2>
         </div>
-    
+
         <div class="slidebar-manu">
             <ul>
                 <li>
-                    <a href="{{ url_for('student_profile') }}" id="s1"><span><i class="fa-solid fa-calendar-days"></i></span>
-                        <span>Profile</span></a>
+                    <a href="{{ url_for('student_profile') }}" id="s1">
+                        <span><i class="fa-solid fa-calendar-days"></i></span>
+                        <span>Profile</span>
+                    </a>
                 </li>
                 <li>
-                    <a href="{{ url_for('edit_profile') }}" id="s1"><span><i class="fa-solid fa-calendar-days"></i></span>
-                        <span> Edit Profile</span></a>
+                    <a href="{{ url_for('edit_profile') }}" id="s1">
+                        <span><i class="fa-solid fa-calendar-days"></i></span>
+                        <span>Edit Profile</span>
+                    </a>
                 </li>
                 <li>
-                    <a href="{{ url_for('view_results') }}" id="s1"><span><i class="fa-solid fa-calendar-days"></i></span>
-                        <span>View Result</span></a>
-                </li>
-                
-                <li>
-                    <a href="{{ url_for('view_attendance') }}" id="s1"><span><i class="fa-solid fa-calendar-days"></i></span>
-                        <span>View Attendance</span></a>
+                    <a href="{{ url_for('view_results') }}" id="s1">
+                        <span><i class="fa-solid fa-calendar-days"></i></span>
+                        <span>View Result</span>
+                    </a>
                 </li>
                 <li>
-                    <a href="{{ url_for('feedback') }}" id="s1"><span><i class="fa-solid fa-calendar-days"></i></span>
-                        <span>Feedback</span></a>
-                </li>
-                
-                <li>
-                    <a href="{{ url_for('change_password') }}" id="s2"><span><i class='fas fa-users'></i></span>
-                        <span>Change Password</span></a>
+                    <a href="{{ url_for('view_attendance') }}" id="s1">
+                        <span><i class="fa-solid fa-calendar-days"></i></span>
+                        <span>View Attendance</span>
+                    </a>
                 </li>
                 <li>
-                    <a href="{{ url_for('notice_board') }}" id="s4"><span><i class="fa-sharp fa-solid fa-bell"></i></span>
-                        <span>Notice Board</span></a>
+                    <a href="{{ url_for('feedback') }}" id="s1">
+                        <span><i class="fa-solid fa-calendar-days"></i></span>
+                        <span>Feedback</span>
+                    </a>
                 </li>
-    
+                <li>
+                    <a href="{{ url_for('change_password') }}" id="s2">
+                        <span><i class='fas fa-users'></i></span>
+                        <span>Change Password</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('notice_board') }}" id="s4">
+                        <span><i class="fa-sharp fa-solid fa-bell"></i></span>
+                        <span>Notice Board</span>
+                    </a>
+                </li>
             </ul>
-    
+
             <ul class="Special">
-    
                 <li>
                     <a href="{{ url_for('logout') }}">
                         <span><i class="fa fa-sign-out"></i></span>
                         <span>Log Out</span>
                     </a>
                 </li>
-    
             </ul>
         </div>
     </div>
-    
-    
+
     <div class="main-content">
         <header>
             <h1 class="menu">
@@ -93,15 +82,14 @@
                     <i class="fa-solid fa-bars"></i>
                 </label>
             </h1>
-    
-    
+
             <div class="logo">
-                <img src="static/justlogo.jpg" width="70px" height="70px" alt="">
+                <img src="{{ url_for('static', filename='justlogo.jpg') }}" width="70px" height="70px" alt="">
             </div>
             <div>
-                <h3 id="or">Jashore University of Science and Tecnology</h3>
+                <h3 id="or">Jashore University of Science and Technology</h3>
             </div>
-    
+
             <div class="icon">
                 <ul>
                     <li>
@@ -110,23 +98,23 @@
                 </ul>
             </div>
         </header>
-        <body>
-            <main>
+
+        <main>
             <div class="form-container">
                 <div class="form-header">
                     <h2>Course Feedback</h2>
                 </div>
-        
+
                 {% with messages = get_flashed_messages(with_categories=true) %}
                 {% if messages %}
-                    <div>
+                    <div class="flash-messages">
                         {% for category, message in messages %}
                             <p class="{{ category }}">{{ message }}</p>
                         {% endfor %}
                     </div>
                 {% endif %}
                 {% endwith %}
-        
+
                 <form action="{{ url_for('submit_feedback') }}" method="POST">
                     <div class="form-row">
                         <label for="course">Select Course</label>
@@ -137,7 +125,7 @@
                             {% endfor %}
                         </select>
                     </div>
-        
+
                     <div class="form-row">
                         <label for="rating">Rate the Course</label>
                         <select name="rating" id="rating" required>
@@ -149,27 +137,20 @@
                             <option value="5">5 - Excellent</option>
                         </select>
                     </div>
-        
+
                     <div class="form-row">
                         <label for="comment">Additional Comments (Optional)</label>
                         <textarea name="comment" id="comment" placeholder="Write any additional comments here..."></textarea>
                     </div>
-        
+
                     <div class="form-submit">
                         <button type="submit">Submit Feedback</button>
                     </div>
                 </form>
-                <p style="font-size: 14px; color: #666;">Note: You can only submit feedback once per course.</p>
+                <p class="note">Note: You can only submit feedback once per course.</p>
             </div>
-            </main>
-        </body>
-    
+        </main>
     </div>
-    
-    <div>
-    </div>
-    
 </body>
 
 </html>
-...

@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
@@ -7,52 +8,208 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css"
         integrity="sha512-Kc323vGBEqzTmouAECnVceyQqyqdsSiqLQISBL29aUW4U/M7pSPA/gEUZQqv1cwx4OnYxTxve5UMg5GT6L4JJg=="
         crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <title>Feedback Data</title>
     <style>
-        .Gt {
-            font-size: 20px;
-            margin-left: 40px;
-            display: none;
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f9;
         }
-        .GR:hover .Gt {
-            display: block;
+
+        .form-container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 100px auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
-        #or {
+
+        .form-header {
             text-align: center;
+            margin-bottom: 20px;
         }
-        canvas {
-            max-width: 600px;
-            margin: 20px auto;
+
+        .form-header h2 {
+            margin: 0;
+            font-size: 24px;
+            color: #333;
+        }
+
+        .form-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            flex: 1;
+        }
+
+        .form-group label {
             display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .form-group select {
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        table th, table td {
+            padding: 10px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+
+        table th {
+            background-color: #f4f4f4;
+        }
+
+        .form-submit {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .form-submit button {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .form-submit button:hover {
+            background-color: #45a049;
+        }
+
+        .feedback-summary {
+            margin-bottom: 20px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .chart-container {
+            width: 30%; /* Smaller pie chart */
+            margin: 20px auto;
+        }
+
+        .no-feedback {
+            text-align: center;
+            font-size: 18px;
+            color: #888;
+            margin-top: 20px;
+        }
+        .slidebar {
+            width: 250px; /* Keep the width the same */
+            height: 100vh; /* Set height to 100% of the viewport */
+            
+            overflow-y: auto; /* Enable vertical scrolling */
+            position: fixed; /* Fix the sidebar in place */
+            top: 0;
+            left: 0;
+        }
+        
+        /* Optional: Style the scrollbar */
+        .slidebar::-webkit-scrollbar {
+            width: 8px; /* Width of the scrollbar */
+        }
+        
+        .slidebar::-webkit-scrollbar-track {
+           
+        }
+        
+        .slidebar::-webkit-scrollbar-thumb {
+           
+            border-radius: 4px; /* Rounded corners */
+        }
+        
+        .slidebar::-webkit-scrollbar-thumb:hover {
+            
+        }
+        
+        /* Adjust main content margin */
+        .main-content {
+            margin-left: 250px; /* Match the sidebar width */
+            transition: all 0.3s ease;
         }
     </style>
 </head>
+
 <body>
-    <!-- Sidebar and Header Code -->
     <input type="checkbox" id="nav-toggle">
     <div class="slidebar">
         <div class="slidebar-brand">
-            <h2>Chairman Profile</h2>
+            <h2>Chairman profile</h2>
         </div>
+    
         <div class="slidebar-manu">
             <ul>
-                <li><a href="{{ url_for('chairman_profile') }}" id="s1"><span><i class="fa-solid fa-calendar-days"></i></span><span>Profile</span></a></li>
-                <li><a href="{{ url_for('edit_profile') }}" id="s1"><span><i class="fa-solid fa-calendar-days"></i></span><span>Edit Profile</span></a></li>
-                <li><a href="{{ url_for('view_results') }}" id="s1"><span><i class="fa-solid fa-calendar-days"></i></span><span>View Result</span></a></li>
-                <li><a href="{{ url_for('view_attendance') }}" id="s1"><span><i class="fa-solid fa-calendar-days"></i></span><span>View Attendance</span></a></li>
-                <li><a href="{{ url_for('show_feedback') }}" id="s1"><span><i class="fa-solid fa-calendar-days"></i></span><span>Show Feedback</span></a></li>
-                <li><a href="{{ url_for('add_course') }}" id="s1"><span><i class="fa-solid fa-calendar-days"></i></span><span>Add Course</span></a></li>
-                <li><a href="{{ url_for('student_course_assign') }}" id="s1"><span><i class="fa-solid fa-calendar-days"></i></span><span>Student Course Assign</span></a></li>
-                <li><a href="{{ url_for('teacher_course_assign') }}" id="s1"><span><i class="fa-solid fa-calendar-days"></i></span><span>Teacher Course Assign</span></a></li>
-                <li><a href="{{ url_for('change_password') }}" id="s2"><span><i class='fas fa-users'></i></span><span>Change Password</span></a></li>
-                <li><a href="{{ url_for('notice_board') }}" id="s4"><span><i class="fa-sharp fa-solid fa-bell"></i></span><span>Notice Board</span></a></li>
+                <li>
+                    <a href="{{ url_for('chairman_profile') }}" id="s1"><span><i class="fa-solid fa-calendar-days"></i></span>
+                        <span>Profile</span></a>
+                </li>
+                <li>
+                    <a href="{{ url_for('edit_profile') }}" id="s1"><span><i class="fa-solid fa-calendar-days"></i></span>
+                        <span> Edit Profile</span></a>
+                </li>
+                <li>
+                    <a href="{{ url_for('chairman_approvals') }}" id="s1"><span><i class="fa-solid fa-calendar-days"></i></span>
+                        <span>Approval</span></a>
+                </li>
+                <li>
+                    <a href="{{ url_for('view_results') }}" id="s1"><span><i class="fa-solid fa-calendar-days"></i></span>
+                        <span>View Result</span></a>
+                </li>           
+                <li>
+                <a href="{{ url_for('view_attendance') }}" id="s1"><span><i class="fa-solid fa-calendar-days"></i></span>
+                        <span>View Attendance</span></a>
+                </li>
+                <li>
+                    <a href="{{ url_for('show_feedback') }}" id="s1"><span><i class="fa-solid fa-calendar-days"></i></span>
+                        <span>Show Feedback</span></a>
+                </li>
+                <li>
+                        <a href="{{ url_for('add_course') }}" id="s1"><span><i class="fa-solid fa-calendar-days"></i></span>
+                            <span>ADD Course</span></a>
+                </li> 
+                <li>
+                        <a href="{{ url_for('student_course_assign') }}" id="s1"><span><i class="fa-solid fa-calendar-days"></i></span>
+                            <span>Student Course Assign</span></a>
+                </li>
+                <li>
+                    <a href="{{ url_for('teacher_course_assign') }}" id="s1"><span><i class="fa-solid fa-calendar-days"></i></span>
+                        <span>Teacher Course Assign</span></a>
+                </li> 
+                <li>
+                    <a href="{{ url_for('change_password') }}" id="s2"><span><i class='fas fa-users'></i></span>
+                        <span>Change Password</span></a>
+                </li>
+                <li>
+                    <a href="{{ url_for('notice_board') }}" id="s4"><span><i class="fa-sharp fa-solid fa-bell"></i></span>
+                        <span>Notice Board</span></a>
+                </li>
+    
             </ul>
-            <ul class="Special">
-                <li><a href="{{ url_for('logout') }}"><span><i class="fa fa-sign-out"></i></span><span>Log Out</span></a></li>
-            </ul>
+    
+            
         </div>
     </div>
-
+    
     <div class="main-content">
         <header>
             <h1 class="menu">
@@ -60,49 +217,60 @@
                     <i class="fa-solid fa-bars"></i>
                 </label>
             </h1>
+    
             <div class="logo">
                 <img src="static/justlogo.jpg" width="70px" height="70px" alt="">
             </div>
             <div>
                 <h3 id="or">Jashore University of Science and Technology</h3>
             </div>
+    
             <div class="icon">
                 <ul>
-                    <li><a href="Edit.html"><i class="fa fa-user"></i></a></li>
+                    <li>
+                        <a href="{{ url_for('logout') }}">
+                            <span><i class="fa fa-sign-out"></i></span>
+                            <span>Log Out</span>
+                        </a>
+                    </li>
                 </ul>
             </div>
         </header>
-        <main>
-            <div class="main-content">
-                <header>
-                    <h1 class="menu">
-                        <label for="nav-toggle">
-                            <i class="fa-solid fa-bars"></i>
-                        </label>
-                    </h1>
-                </header>
-                <div class="form-header">
-                    <h2>Feedback Data</h2>
-                </div>
 
-                <!-- Course Filter Form -->
-                <form method="POST" style="margin-bottom: 20px;">
-                    <label for="course">Select Course:</label>
-                    <select name="course" id="course" required>
-                        <option value="">--Select Course--</option>
-                        {% for course in courses %}
-                            <option value="{{ course['course_code'] }}" 
-                                {% if selected_course == course['course_code'] %}selected{% endif %}>
-                                {{ course['course_code'] }} - {{ course['course_name'] }}
-                            </option>
-                        {% endfor %}
-                    </select>
-                    <button type="submit">Submit</button>
-                </form>
+        <div class="form-container">
+            <div class="form-header">
+                <h2>Feedback Data</h2>
+            </div>
+
+            <!-- Course Filter Form -->
+            <form method="POST" style="margin-bottom: 20px;">
+                <label for="course">Select Course:</label>
+                <select name="course" id="course" required>
+                    <option value="">--Select Course--</option>
+                    {% for course in courses %}
+                        <option value="{{ course['course_code'] }}" 
+                            {% if selected_course == course['course_code'] %}selected{% endif %}>
+                            {{ course['course_code'] }} - {{ course['course_name'] }}
+                        </option>
+                    {% endfor %}
+                </select>
+                <button type="submit">Submit</button>
+            </form>
+
+            <!-- Show feedback only if a course is selected -->
+            {% if selected_course %}
+                <!-- Feedback Summary -->
+                {% if feedbacks %}
+                    <div class="feedback-summary">
+                        Total Feedback: {{ feedbacks|length }} | Average Rating: {{ average_rating|round(2) }}
+                    </div>
+                {% endif %}
 
                 <!-- Pie Chart -->
                 {% if chart_data %}
-                    <canvas id="feedbackChart"></canvas>
+                    <div class="chart-container">
+                        <canvas id="feedbackChart"></canvas>
+                    </div>
                 {% endif %}
 
                 <!-- Feedback Table -->
@@ -125,17 +293,23 @@
                             {% endfor %}
                         {% else %}
                             <tr>
-                                <td colspan="3" style="text-align: center;">No feedback available</td>
+                                <td colspan="3" class="no-feedback">No feedback available for the selected course.</td>
                             </tr>
                         {% endif %}
                     </tbody>
                 </table>
-            </div>
-        </main>
+            {% else %}
+                <!-- Show a message if no course is selected -->
+                <div class="no-feedback">
+                    Please select a course to view feedback.
+                </div>
+            {% endif %}
+        </div>
     </div>
 
     <!-- JavaScript for Pie Chart -->
     {% if chart_data %}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         const ctx = document.getElementById('feedbackChart').getContext('2d');
         const feedbackChart = new Chart(ctx, {

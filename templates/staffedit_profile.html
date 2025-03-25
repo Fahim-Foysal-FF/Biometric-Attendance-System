@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 ...<!DOCTYPE html>
 <html lang="en">
 
@@ -167,3 +168,174 @@
 
 </html>
 ...
+=======
+...<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='form_style.css') }}">
+    
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css"
+        integrity="sha512-Kc323vGBEqzTmouAECnVceyQqyqdsSiqLQISBL29aUW4U/M7pSPA/gEUZQqv1cwx4OnYxTxve5UMg5GT6L4JJg=="
+        crossorigin="anonymous" referrerpolicy="no-referrer" />
+        <style>
+           
+         
+            .Gt
+            {
+                font-size: 20px;
+                margin-left: 40px;
+                display: none;
+            }
+            .GR:hover .Gt
+            {
+               display: block;
+            }
+            #or 
+            {
+                text-align: center;
+            }
+        </style>
+</head>
+
+<body>
+    <input type="checkbox" id="nav-toggle">
+    <div class="slidebar">
+        <div class="slidebar-brand">
+            <h2>Staff profile</h2>
+        </div>
+    
+        <div class="slidebar-manu">
+            <ul>
+                <li>
+                    <a href="{{ url_for('staff_profile') }}" id="s1"><span><i class="fa-solid fa-calendar-days"></i></span>
+                        <span>Profile</span></a>
+                </li>
+                <li>
+                    <a href="{{ url_for('edit_profile') }}" id="s1"><span><i class="fa-solid fa-calendar-days"></i></span>
+                        <span>Edit Profile</span></a>
+                </li>
+                <li>
+                    <a href="{{ url_for('add_notice') }}" id="s1"><span><i class="fa-solid fa-calendar-days"></i></span>
+                        <span>ADD Notice</span></a>
+                </li>
+                 
+                <li>
+                    <a href="{{ url_for('change_password') }}" id="s2"><span><i class='fas fa-users'></i></span>
+                        <span>Change Password</span></a>
+                </li>
+                <li>
+                    <a href="{{ url_for('notice_board') }}" id="s4"><span><i class="fa-sharp fa-solid fa-bell"></i></span>
+                        <span>Notice Board</span></a>
+                </li>
+    
+            </ul>
+    
+            <ul class="Special">
+    
+                <li>
+                    <a href="{{ url_for('logout') }}">
+                        <span><i class="fa fa-sign-out"></i></span>
+                        <span>Log Out</span>
+                    </a>
+                </li>
+    
+            </ul>
+        </div>
+    </div>
+    
+    
+    <div class="main-content">
+        <header>
+            <h1 class="menu">
+                <label for="nav-toggle">
+                    <i class="fa-solid fa-bars"></i>
+                </label>
+            </h1>
+    
+    
+            <div class="logo">
+                <img src="static/justlogo.jpg" width="70px" height="70px" alt="">
+            </div>
+            <div>
+                <h3 id="or">Jashore University of Science and Tecnology</h3>
+            </div>
+    
+            <div class="icon">
+                <ul>
+                    <li>
+                        <a href="Edit.html"><i class="fa fa-user"></i></a>
+                    </li>
+                </ul>
+            </div>
+        </header>
+        <main>
+           <div class="profile-info">
+            <img src="{{ url_for('static', filename='uploads/' + profile['photo']) if profile.get('photo') else url_for('static', filename='uploads/default.jpg') }}" 
+                 alt="Profile Photo" 
+                 class="profile-photo"><br><br>
+                <h3>{{ profile['name'] }}</h3><br>
+                <p>{{profile['designation']}}</p>
+                <p>Department of {{ profile['department'] }}</p><br>
+                <form action="{{ url_for('upload_photo') }}" method="POST" enctype="multipart/form-data">
+                    
+                        <legend>Upload Profile Picture</legend>
+                        <label for="profile-photo">Upload Your Profile Picture:</label>
+
+                        <input type="file" id="profile-photo" name="profile-photo" accept="image/*">
+                        <button type="submit">Upload</button>
+                  
+                </form>
+            </div>
+           
+            <br>
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <ul>
+                    {% for category, message in messages %}
+                        <li class="{{ category }}">{{ message }}</li><br>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+            {% endwith %}
+            <br>
+            <form action="{{ url_for('student_profile') }}" method="POST" class="update-form">
+               <label>Name:</label><br>
+                <input type="text" name="name" value="{{ profile['name'] }}" required><br>
+                  <label>Department:</label><br>
+                <input type="text" name="department" value="{{ profile['department'] }}" required><br>
+                <label>Designation:</label><br>
+                <input type="text" name="designation" value="{{ profile['designation'] }}" required><br>
+                <label>Present Address:</label><br>
+                <input type="text" name="present_address" value="{{ profile['present_address'] }}" required><br>
+                <label>Permanent Address:</label><br>
+                <input type="text" name="permanent_address" value="{{ profile['permanent_address'] }}" required><br>
+                <label>Date of Birth:</label><br>
+                <input type="date" name="dob" value="{{ profile['dob'] }}" required><br>
+                <label>Contact Number:</label><br>
+                <input type="text" name="mobile_number" value="{{ profile['mobile_number'] }}" required><br>
+                <label>Email Address:</label><br>
+                <input type="email" name="email" value="{{ profile['email'] }}" required><br>
+                <label for="current_password">Current Password:</label><br>
+                <input type="password" id="current_password" name="current_password" required><br><br>
+            
+                <button type="submit">Update</button>
+            </form>
+            
+        
+    
+        </main>
+    
+    </div>
+    
+    <div>
+    </div>
+    
+</body>
+
+</html>
+...
+>>>>>>> 7a00561 (Final commit)
