@@ -1710,6 +1710,138 @@ def chairman_approvals():
 
     return render_template('chairman_approvals.html', pending_users=pending_users)
 
+
+def execute_query(query, params=(), fetch=False):
+    cursor = None
+    try:
+        cursor = mydb.cursor(dictionary=True)
+        cursor.execute(query, params)
+        
+        if fetch:
+            result = cursor.fetchall()
+            # Ensure all results are consumed
+            cursor.fetchall() if cursor.with_rows else None
+            return result
+        else:
+            mydb.commit()
+            return True
+            
+    except Exception as e:
+        print(f"Database error: {e}")
+        mydb.rollback()
+        return None
+    finally:
+        if cursor:
+            cursor.close()
+
+
+@app.route('/manually_mark_attendance', methods=['GET', 'POST'])
+def manually_mark_attendance():
+    # Check authentication
+    if 'loggedin' not in session or session.get('user_type') != 'teacher':
+        return redirect(url_for('login'))
+    
+    teacher_email = session.get('email')
+    
+    # Fetch teacher's name
+    teacher_data = execute_query(
+        "SELECT name FROM teacher WHERE email = %s", 
+        (teacher_email,), 
+        fetch=True
+    )
+    teacher_name = teacher_data[0]['name'] if teacher_data else teacher_email
+
+    if request.method == 'POST':
+        class_id = request.form.get('class_id')
+        roll_number = request.form.get('roll_number').strip()
+        status = request.form.get('status')
+        
+        # Get class details with teacher verification
+        class_info = execute_query("""
+            SELECT c.* FROM classes c
+            JOIN teacher_course_assign tca ON 
+                c.course_code = tca.course_code AND
+                c.session = tca.session AND
+                c.semester = tca.semester
+            WHERE c.id = %s AND tca.email = %s
+            LIMIT 1
+        """, (class_id, teacher_email), fetch=True)
+        
+        if not class_info:
+            flash("Invalid class or unauthorized access", "error")
+            return redirect(url_for('manually_mark_attendance'))
+        
+        class_info = class_info[0]
+        
+        # Verify student enrollment and get username
+        student_data = execute_query("""
+            SELECT s.name 
+            FROM student_course_assign sca
+            JOIN student s ON sca.roll_number = s.roll_number
+            WHERE sca.roll_number = %s 
+              AND sca.course_code = %s 
+              AND sca.session = %s 
+              AND sca.semester = %s
+            LIMIT 1
+        """, (roll_number, class_info['course_code'], 
+             class_info['session'], class_info['semester']), fetch=True)
+        
+        if not student_data:
+            flash("Student not enrolled in this course", "error")
+            return redirect(url_for('manually_mark_attendance'))
+        
+        student_username = student_data[0]['name']
+        
+        # Calculate timein
+        timein = class_info['start_time']
+        if status == 'Late':
+            timein = (datetime.datetime.combine(datetime.date.today(), timein) + 
+                     datetime.timedelta(minutes=15)).time()
+        
+        # Record attendance with student username
+        success = execute_query("""
+            INSERT INTO users_logs 
+            (username, serialnumber, device_uid, checkindate, timein, timeout, fingerout)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+            ON DUPLICATE KEY UPDATE 
+            timein = VALUES(timein), 
+            timeout = VALUES(timeout),
+            fingerout = VALUES(fingerout)
+        """, (
+            student_username,  # Using actual student username instead of teacher note
+            roll_number,
+            f"Manual by {teacher_name}",
+            class_info['class_date'],
+            timein,
+            class_info['end_time'],
+            1  # fingerout
+        ))
+        
+        if success:
+            flash(f"Marked {status}: {roll_number} ({student_username}) for {class_info['course_code']} on {class_info['class_date']}", "success")
+        else:
+            flash("Failed to record attendance", "error")
+    
+    # Get teacher's classes
+    classes = execute_query("""
+        SELECT c.id, c.course_code, c.class_date, 
+               DATE_FORMAT(c.start_time, '%H:%i') as formatted_start_time,
+               DATE_FORMAT(c.end_time, '%H:%i') as formatted_end_time,
+               c.session, c.semester
+        FROM classes c
+        JOIN teacher_course_assign tca ON 
+            c.course_code = tca.course_code AND
+            c.session = tca.session AND
+            c.semester = tca.semester
+        WHERE tca.email = %s
+          AND c.class_date BETWEEN CURDATE() - INTERVAL 14 DAY AND CURDATE() + INTERVAL 14 DAY
+        ORDER BY c.class_date DESC, c.start_time DESC
+    """, (teacher_email,), fetch=True)
+    
+    return render_template('manually_mark_attendance.html', 
+                         classes=classes or [],
+                         teacher_name=teacher_name)
+
     
 
 if__name__='__main__'
