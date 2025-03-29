@@ -215,12 +215,19 @@ def execute_query(query, params=None, fetch=False):
         # Convert params to proper format
         if params is None:
             params = ()
-        elif isinstance(params, list):
-            if not all(isinstance(x, (tuple, dict)) for x in params):
-                params = [tuple(x) if not isinstance(x, (tuple, dict)) else x for x in params]
+        elif isinstance(params, (list, tuple)):
+            # Ensure all elements are properly formatted
+            if len(params) == 1 and not isinstance(params[0], (tuple, dict)):
+                params = (params[0],)  # Single value in a tuple
+            elif not all(isinstance(x, (tuple, dict)) for x in params):
+                params = tuple(params)  # Convert list to tuple
         elif not isinstance(params, (tuple, dict)):
-            params = (params,)
+            params = (params,)  # Single value to tuple
             
+        # Debug logging (remove in production)
+        logging.debug(f"Executing query: {query}")
+        logging.debug(f"With parameters: {params}")
+        
         # Execute query
         result = db.session.execute(text(query), params)
         
@@ -234,7 +241,7 @@ def execute_query(query, params=None, fetch=False):
         
     except Exception as e:
         db.session.rollback()
-        logging.error(f"Database error in query '{query}': {str(e)}")
+        logging.error(f"Database error in query '{query}' with params {params}: {str(e)}")
         return False
 
 def get_db_connection():
