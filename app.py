@@ -1,67 +1,76 @@
-import csv
+import os
 import logging
-from flask import Flask, render_template, request, redirect, url_for, flash, session
-from flask import Flask, render_template, request, flash, redirect, url_for, jsonify
-from datetime import datetime
+from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
+from datetime import datetime, timedelta
 import time
+from flask_mail import Mail, Message
 import re
-import os 
 from werkzeug.utils import secure_filename
-
 from flask_mail import Mail, Message
 from itsdangerous import URLSafeTimedSerializer
 from werkzeug.security import generate_password_hash, check_password_hash
-import mysql.connector
+from passlib.hash import sha256_crypt
 import secrets
-from datetime import timedelta
-
-
-
+from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
-app.secret_key = secrets.token_hex(16)
-app.config['MAIL_SERVER'] = 'smtp.gmail.com'
-app.config['MAIL_PORT'] = 587
-app.config['MAIL_USERNAME'] = 'fafo1612@gmail.com'
-app.config['MAIL_PASSWORD'] = 'njryxxemnjekosiy'
-app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USE_SSL'] = False
+
+# Configuration
+app.secret_key = os.environ.get('SECRET_KEY', secrets.token_hex(16))
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=1)
+
+# Database configuration (PostgreSQL for production, SQLite for local development)
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///local.db')
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+db = SQLAlchemy(app)
+
+# Email configuration
+app.config['MAIL_SERVER'] = os.environ.get('MAIL_SERVER', 'smtp.gmail.com')
+app.config['MAIL_PORT'] = int(os.environ.get('MAIL_PORT', 587))
+app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
+app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
+app.config['MAIL_USE_TLS'] = os.environ.get('MAIL_USE_TLS', 'true').lower() == 'true'
+app.config['MAIL_USE_SSL'] = os.environ.get('MAIL_USE_SSL', 'false').lower() == 'true'
 mail = Mail(app)
 
-app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=1)  # Session expires after 1 day
-
-mydb = mysql.connector.connect(
-    host="localhost",
-    user="root",
-    password="",
-    database="app1"
-)
-
-UPLOAD_FOLDER = 'Biometric-Attendance-System/static/uploads'  
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'} 
+# File upload configuration
+UPLOAD_FOLDER = 'static/uploads'
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
+# Initialize serializer
+s = URLSafeTimedSerializer(app.secret_key)
+
+# Database models would go here (example)
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(120), unique=True, nullable=False)
+    password = db.Column(db.String(200), nullable=False)
+    # Add other fields as needed
+
+# Helper functions
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-
-s = URLSafeTimedSerializer(app.secret_key)
 def execute_query(query, params=(), fetch=False):
-    cursor = mydb.cursor(dictionary=True)
-    cursor.execute(query, params)
-    if fetch:
-        result = cursor.fetchall()
-        cursor.close()
-        return result
-    mydb.commit()
-    cursor.close()
+    try:
+        result = db.session.execute(query, params)
+        if fetch:
+            return [dict(row) for row in result]
+        db.session.commit()
+        return True
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Database error: {e}")
+        return False
 
-
-
+# Your routes would go here (keep all your existing route functions)
 @app.route('/')
 def home():
     return render_template('index.html')
+
+# ... (keep all your other routes exactly as they are)
 
 
 @app.route('/register')
@@ -1639,40 +1648,27 @@ def add_class():
 
 
 
-import smtplib
-from email.mime.text import MIMEText
-from flask import Flask, request, redirect, url_for, flash, render_template
 
 
-
-# Function to send approval email
 def send_approval_email(user_email):
-    # Email content
-    subject = "Your Account Has Been Approved"
-    body = f"""
-    Dear User,
-
-    Your account has been approved by the chairman. You can now log in to the system.
-
-    Best regards,
-    Your Organization
-    """
-
-    # Create the email
-    msg = MIMEText(body)
-    msg['Subject'] = subject
-    msg['From'] = "noreply@yourdomain.com"  # Replace with your email
-    msg['To'] = user_email
-
-    # Send the email using SMTP
     try:
-        with smtplib.SMTP('smtp.gmail.com', 587) as server:  # Replace with your SMTP server
-            server.starttls()
-            server.login("fafo1612@gmail.com", "njryxxemnjekosiy")  # Replace with your credentials
-            server.sendmail("noreply@yourdomain.com", [user_email], msg.as_string())
-        print(f"Approval email sent to {user_email}")
+        msg = Message(
+            subject="Your Account Has Been Approved",
+            sender=os.environ.get('MAIL_DEFAULT_SENDER', 'noreply@yourdomain.com'),
+            recipients=[user_email],
+            body=f"""Dear User,
+            
+Your account has been approved by the chairman. You can now log in to the system.
+
+Best regards,
+Your Organization"""
+        )
+        mail.send(msg)
+        app.logger.info(f"Approval email sent to {user_email}")
+        return True
     except Exception as e:
-        print(f"Failed to send email: {e}")
+        app.logger.error(f"Failed to send email: {e}")
+        return False
 
 @app.route('/chairman/approvals', methods=['GET', 'POST'])
 def chairman_approvals():
@@ -1711,28 +1707,6 @@ def chairman_approvals():
     return render_template('chairman_approvals.html', pending_users=pending_users)
 
 
-def execute_query(query, params=(), fetch=False):
-    cursor = None
-    try:
-        cursor = mydb.cursor(dictionary=True)
-        cursor.execute(query, params)
-        
-        if fetch:
-            result = cursor.fetchall()
-            # Ensure all results are consumed
-            cursor.fetchall() if cursor.with_rows else None
-            return result
-        else:
-            mydb.commit()
-            return True
-            
-    except Exception as e:
-        print(f"Database error: {e}")
-        mydb.rollback()
-        return None
-    finally:
-        if cursor:
-            cursor.close()
 
 
 @app.route('/manually_mark_attendance', methods=['GET', 'POST'])
@@ -1844,5 +1818,7 @@ def manually_mark_attendance():
 
     
 
-if__name__='__main__'
-app.run(debug=True)
+if __name__ == '__main__':
+    with app.app_context():
+        db.create_all()  # Create tables if they don't exist
+    app.run(debug=os.environ.get('FLASK_DEBUG', 'false').lower() == 'true')
