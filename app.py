@@ -6,12 +6,14 @@ import time
 from flask_mail import Mail, Message
 import re
 from werkzeug.utils import secure_filename
-from flask_mail import Mail, Message
 from itsdangerous import URLSafeTimedSerializer
 from werkzeug.security import generate_password_hash, check_password_hash
 from passlib.hash import sha256_crypt
 import secrets
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import text
+import psycopg2
+from psycopg2.extras import DictCursor
 
 app = Flask(__name__)
 
@@ -19,16 +21,8 @@ app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', secrets.token_hex(16))
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=1)
 
-
-
-# Get PostgreSQL URL from environment (no fallback)
-database_url = os.environ['DATABASE_URL']  # Will raise error if not set
-
-# Fix URL format for SQLAlchemy
-if database_url.startswith('postgres://'):
-    database_url = database_url.replace('postgres://', 'postgresql://', 1)
-
-app.config['SQLALCHEMY_DATABASE_URI'] = database_url
+# PostgreSQL configuration
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ['DATABASE_URL'].replace('postgres://', 'postgresql://', 1)
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
@@ -51,12 +45,166 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 # Initialize serializer
 s = URLSafeTimedSerializer(app.secret_key)
 
-# Database models would go here (example)
+# Database models
 class User(db.Model):
+    __tablename__ = 'userss'
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password = db.Column(db.String(200), nullable=False)
-    # Add other fields as needed
+    user_type = db.Column(db.String(50))
+    is_approved = db.Column(db.Boolean, default=False)
+    name = db.Column(db.String(100))
+    mobile_number = db.Column(db.String(20))
+    department = db.Column(db.String(100))
+    designation = db.Column(db.String(100))
+    roll_number = db.Column(db.String(50))
+    session = db.Column(db.String(50))
+    semester = db.Column(db.String(20))
+    photo = db.Column(db.String(200))
+    reg_no = db.Column(db.String(50))
+    father_name = db.Column(db.String(100))
+    mother_name = db.Column(db.String(100))
+    present_address = db.Column(db.Text)
+    permanent_address = db.Column(db.Text)
+    dob = db.Column(db.Date)
+
+class Student(db.Model):
+    __tablename__ = 'student'
+    id = db.Column(db.Integer, primary_key=True)
+    roll_number = db.Column(db.String(50), unique=True)
+    name = db.Column(db.String(100))
+    email = db.Column(db.String(120), unique=True)
+    mobile_number = db.Column(db.String(20))
+    user_type = db.Column(db.String(50))
+    session = db.Column(db.String(50))
+    password = db.Column(db.String(200))
+    department = db.Column(db.String(100))
+    semester = db.Column(db.String(20))
+    reg_no = db.Column(db.String(50))
+    father_name = db.Column(db.String(100))
+    mother_name = db.Column(db.String(100))
+    present_address = db.Column(db.Text)
+    permanent_address = db.Column(db.Text)
+    dob = db.Column(db.Date)
+
+class Teacher(db.Model):
+    __tablename__ = 'teacher'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100))
+    email = db.Column(db.String(120), unique=True)
+    mobile_number = db.Column(db.String(20))
+    user_type = db.Column(db.String(50))
+    password = db.Column(db.String(200))
+    department = db.Column(db.String(100))
+    designation = db.Column(db.String(100))
+    present_address = db.Column(db.Text)
+    permanent_address = db.Column(db.Text)
+    dob = db.Column(db.Date)
+
+class Chairman(db.Model):
+    __tablename__ = 'chairman'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100))
+    email = db.Column(db.String(120), unique=True)
+    mobile_number = db.Column(db.String(20))
+    user_type = db.Column(db.String(50))
+    password = db.Column(db.String(200))
+    department = db.Column(db.String(100))
+    designation = db.Column(db.String(100))
+    present_address = db.Column(db.Text)
+    permanent_address = db.Column(db.Text)
+    dob = db.Column(db.Date)
+
+class Staff(db.Model):
+    __tablename__ = 'staff'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100))
+    email = db.Column(db.String(120), unique=True)
+    mobile_number = db.Column(db.String(20))
+    user_type = db.Column(db.String(50))
+    password = db.Column(db.String(200))
+    department = db.Column(db.String(100))
+    designation = db.Column(db.String(100))
+    present_address = db.Column(db.Text)
+    permanent_address = db.Column(db.Text)
+    dob = db.Column(db.Date)
+
+class Course(db.Model):
+    __tablename__ = 'course'
+    id = db.Column(db.Integer, primary_key=True)
+    course_code = db.Column(db.String(50), unique=True)
+    course_name = db.Column(db.String(100))
+    department = db.Column(db.String(100))
+    semester = db.Column(db.String(20))
+
+class StudentCourseAssign(db.Model):
+    __tablename__ = 'student_course_assign'
+    id = db.Column(db.Integer, primary_key=True)
+    roll_number = db.Column(db.String(50))
+    session = db.Column(db.String(50))
+    semester = db.Column(db.String(20))
+    course_code = db.Column(db.String(50))
+    course_name = db.Column(db.String(100))
+    department = db.Column(db.String(100))
+
+class TeacherCourseAssign(db.Model):
+    __tablename__ = 'teacher_course_assign'
+    id = db.Column(db.Integer, primary_key=True)
+    teacher_name = db.Column(db.String(100))
+    department = db.Column(db.String(100))
+    session = db.Column(db.String(50))
+    semester = db.Column(db.String(20))
+    course_code = db.Column(db.String(50))
+    course_name = db.Column(db.String(100))
+    email = db.Column(db.String(120))
+
+class Result(db.Model):
+    __tablename__ = 'result'
+    id = db.Column(db.Integer, primary_key=True)
+    roll_number = db.Column(db.String(50))
+    session = db.Column(db.String(50))
+    semester = db.Column(db.String(20))
+    course_code = db.Column(db.String(50))
+    exam_type = db.Column(db.String(50))
+    marks = db.Column(db.Float)
+
+class Classes(db.Model):
+    __tablename__ = 'classes'
+    id = db.Column(db.Integer, primary_key=True)
+    session = db.Column(db.String(50))
+    semester = db.Column(db.String(20))
+    course_code = db.Column(db.String(50))
+    class_date = db.Column(db.Date)
+    start_time = db.Column(db.Time)
+    end_time = db.Column(db.Time)
+
+class UsersLogs(db.Model):
+    __tablename__ = 'users_logs'
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(100))
+    serialnumber = db.Column(db.String(50))
+    device_uid = db.Column(db.String(100))
+    checkindate = db.Column(db.Date)
+    timein = db.Column(db.Time)
+    timeout = db.Column(db.Time)
+    fingerout = db.Column(db.Integer)
+
+class Notices(db.Model):
+    __tablename__ = 'notices'
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200))
+    content = db.Column(db.Text)
+    posted_by = db.Column(db.String(100))
+    date = db.Column(db.Date)
+    file_url = db.Column(db.String(200))
+
+class CourseFeedback(db.Model):
+    __tablename__ = 'course_feedback'
+    id = db.Column(db.Integer, primary_key=True)
+    roll_number = db.Column(db.String(50))
+    course_code = db.Column(db.String(50))
+    rating = db.Column(db.Integer)
+    comment = db.Column(db.Text)
 
 # Helper functions
 def allowed_file(filename):
@@ -64,7 +212,7 @@ def allowed_file(filename):
 
 def execute_query(query, params=(), fetch=False):
     try:
-        result = db.session.execute(query, params)
+        result = db.session.execute(text(query), params)
         if fetch:
             return [dict(row) for row in result]
         db.session.commit()
@@ -74,18 +222,38 @@ def execute_query(query, params=(), fetch=False):
         logging.error(f"Database error: {e}")
         return False
 
-# Your routes would go here (keep all your existing route functions)
+def get_db_connection():
+    conn = psycopg2.connect(os.environ['DATABASE_URL'])
+    return conn
+
+def send_approval_email(user_email):
+    try:
+        msg = Message(
+            subject="Your Account Has Been Approved",
+            sender=app.config['MAIL_USERNAME'],
+            recipients=[user_email],
+            body=f"""Dear User,
+            
+Your account has been approved by the chairman. You can now log in to the system.
+
+Best regards,
+Your Organization"""
+        )
+        mail.send(msg)
+        app.logger.info(f"Approval email sent to {user_email}")
+        return True
+    except Exception as e:
+        app.logger.error(f"Failed to send email: {e}")
+        return False
+
+# Routes
 @app.route('/')
 def home():
     return render_template('index.html')
 
-# ... (keep all your other routes exactly as they are)
-
-
 @app.route('/register')
 def register():
     return render_template('register.html')
-
 
 @app.route('/student_register', methods=['POST', 'GET'])
 def student_register():
@@ -116,15 +284,18 @@ def student_register():
             return render_template('student_register.html', roll_number=roll_number, name=name, email=email, 
                                    mobile_number=mobile_number, session_value=session_value, department=department, semester=semester)
 
-        mycursor = mydb.cursor()
-        mycursor.execute("SELECT * FROM userss WHERE email = %s", (email,))
-        if mycursor.fetchone():
+        # Check if email exists
+        query = "SELECT * FROM userss WHERE email = %s"
+        result = execute_query(query, (email,), fetch=True)
+        if result:
             flash("Email is already registered!", "error")
             return render_template('student_register.html', roll_number=roll_number, name=name, email=email, 
                                    mobile_number=mobile_number, session_value=session_value, department=department, semester=semester)
 
-        mycursor.execute("SELECT * FROM student WHERE roll_number = %s", (roll_number,))
-        if mycursor.fetchone():
+        # Check if roll number exists
+        query = "SELECT * FROM student WHERE roll_number = %s"
+        result = execute_query(query, (roll_number,), fetch=True)
+        if result:
             flash("Roll Number is already registered!", "error")
             return render_template('student_register.html', roll_number=roll_number, name=name, email=email, 
                                    mobile_number=mobile_number, session_value=session_value, department=department, semester=semester)
@@ -132,26 +303,29 @@ def student_register():
         hashed_password = sha256_crypt.encrypt(password)
 
         # Insert into userss table with is_approved = FALSE
-        mycursor.execute("""
+        query = """
             INSERT INTO userss (roll_number, name, email, mobile_number, user_type, session, password, department, semester, is_approved)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-        """, (roll_number, name, email, mobile_number, 'student', session_value, hashed_password, department, semester, False))
+            RETURNING id
+        """
+        result = execute_query(query, (roll_number, name, email, mobile_number, 'student', session_value, hashed_password, department, semester, False), fetch=True)
+        
+        if not result:
+            flash("Registration failed. Please try again.", "error")
+            return redirect(url_for('student_register'))
 
         # Insert into student table
-        mycursor.execute("""
+        query = """
             INSERT INTO student (roll_number, name, email, mobile_number, user_type, session, password, department, semester)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-        """, (roll_number, name, email, mobile_number, 'student', session_value, hashed_password, department, semester))
-
-        mydb.commit()
-        mycursor.close()
+        """
+        execute_query(query, (roll_number, name, email, mobile_number, 'student', session_value, hashed_password, department, semester))
 
         flash("Registration successful! Your account is pending approval.", "success")
         return redirect(url_for('login'))
 
     return render_template('student_register.html')
-        
-    
+
 @app.route('/teacher_register', methods=['POST', 'GET'])
 def teacher_register():
     if request.method == 'POST':
@@ -174,9 +348,10 @@ def teacher_register():
             return render_template('teacher_register.html', name=name, email=email, designation=designation,
                                    mobile_number=mobile_number, department=department)
 
-        mycursor = mydb.cursor()
-        mycursor.execute("SELECT * FROM userss WHERE email = %s", (email,))
-        if mycursor.fetchone():
+        # Check if email exists
+        query = "SELECT * FROM userss WHERE email = %s"
+        result = execute_query(query, (email,), fetch=True)
+        if result:
             flash("Email is already registered!", "error")
             return render_template('teacher_register.html', name=name, email=email, designation=designation,
                                    mobile_number=mobile_number, department=department)
@@ -184,25 +359,30 @@ def teacher_register():
         hashed_password = sha256_crypt.encrypt(password)
 
         # Insert into userss table with is_approved = FALSE
-        mycursor.execute("""
+        query = """
             INSERT INTO userss (name, email, mobile_number, user_type, password, department, designation, is_approved)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-        """, (name, email, mobile_number, 'teacher', hashed_password, department, designation, False))
+            RETURNING id
+        """
+        result = execute_query(query, (name, email, mobile_number, 'teacher', hashed_password, department, designation, False), fetch=True)
+        
+        if not result:
+            flash("Registration failed. Please try again.", "error")
+            return redirect(url_for('teacher_register'))
 
         # Insert into teacher table
-        mycursor.execute("""
+        query = """
             INSERT INTO teacher (name, email, mobile_number, user_type, password, department, designation)
             VALUES (%s, %s, %s, %s, %s, %s, %s)
-        """, (name, email, mobile_number, 'teacher', hashed_password, department, designation))
-
-        mydb.commit()
-        mycursor.close()
+        """
+        execute_query(query, (name, email, mobile_number, 'teacher', hashed_password, department, designation))
 
         flash("Registration successful! Your account is pending approval.", "success")
         return redirect(url_for('login'))
 
     return render_template('teacher_register.html')
-@app.route('/chairman_register',methods=['POST', 'GET'])
+
+@app.route('/chairman_register', methods=['POST', 'GET'])
 def chairman_register():
     if request.method == 'POST':
         name = request.form.get('name')
@@ -211,9 +391,7 @@ def chairman_register():
         password = request.form.get('password')
         confirm_password = request.form.get('confirm_password')
         department = request.form.get('department')
-       
 
-       
         if not re.match(r'^01[3-9]\d{8}$', mobile_number):
             flash("Invalid mobile number! It must be 11 digits and start with a valid operator code in Bangladesh.", "error")
             return render_template('chairman_register.html', name=name, email=email,
@@ -224,37 +402,38 @@ def chairman_register():
             return render_template('chairman_register.html', name=name, email=email,
                                    mobile_number=mobile_number, department=department)
 
-        mycursor = mydb.cursor()
-       
-        mycursor.execute("SELECT * FROM userss WHERE email = %s", (email,))
-        if mycursor.fetchone():
+        # Check if email exists
+        query = "SELECT * FROM userss WHERE email = %s"
+        result = execute_query(query, (email,), fetch=True)
+        if result:
             flash("Email is already registered!", "error")
             return render_template('chairman_register.html', name=name, email=email,
                                    mobile_number=mobile_number, department=department)
 
-
         hashed_password = sha256_crypt.encrypt(password)
-       
-       
-         
-        mycursor.execute("""
-            INSERT INTO userss ( name, email, mobile_number, user_type ,password, department,designation,is_approved)
-            VALUES (%s, %s, %s, %s, %s, %s)
-        """, ( name, email, mobile_number, 'chairman', hashed_password, department,'Chairman', True))
+
+        # Insert into userss table with is_approved = TRUE
+        query = """
+            INSERT INTO userss (name, email, mobile_number, user_type, password, department, designation, is_approved)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            RETURNING id
+        """
+        result = execute_query(query, (name, email, mobile_number, 'chairman', hashed_password, department, 'Chairman', True), fetch=True)
         
-        mycursor.execute("""
-            INSERT INTO chairman ( name, email, mobile_number, user_type ,password, department,designation)
-            VALUES (%s, %s, %s, %s, %s, %s)
-        """, ( name, email, mobile_number, 'chairman', hashed_password, department,'Chairman'))
-        
-        mydb.commit()
-        mycursor.close()
+        if not result:
+            flash("Registration failed. Please try again.", "error")
+            return redirect(url_for('chairman_register'))
+
+        # Insert into chairman table
+        query = """
+            INSERT INTO chairman (name, email, mobile_number, user_type, password, department, designation)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+        """
+        execute_query(query, (name, email, mobile_number, 'chairman', hashed_password, department, 'Chairman'))
 
         flash("Registration successful!", "success")
         return redirect(url_for('login'))
     return render_template('chairman_register.html')
-
-
 
 @app.route('/staff_register', methods=['POST', 'GET'])
 def staff_register():
@@ -278,9 +457,10 @@ def staff_register():
             return render_template('staff_register.html', name=name, email=email, designation=designation,
                                    mobile_number=mobile_number, department=department)
 
-        mycursor = mydb.cursor()
-        mycursor.execute("SELECT * FROM userss WHERE email = %s", (email,))
-        if mycursor.fetchone():
+        # Check if email exists
+        query = "SELECT * FROM userss WHERE email = %s"
+        result = execute_query(query, (email,), fetch=True)
+        if result:
             flash("Email is already registered!", "error")
             return render_template('staff_register.html', name=name, email=email, designation=designation,
                                    mobile_number=mobile_number, department=department)
@@ -288,30 +468,32 @@ def staff_register():
         hashed_password = sha256_crypt.encrypt(password)
 
         # Insert into userss table with is_approved = FALSE
-        mycursor.execute("""
+        query = """
             INSERT INTO userss (name, email, mobile_number, user_type, password, department, designation, is_approved)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-        """, (name, email, mobile_number, 'staff', hashed_password, department, designation, False))
+            RETURNING id
+        """
+        result = execute_query(query, (name, email, mobile_number, 'staff', hashed_password, department, designation, False), fetch=True)
+        
+        if not result:
+            flash("Registration failed. Please try again.", "error")
+            return redirect(url_for('staff_register'))
 
         # Insert into staff table
-        mycursor.execute("""
+        query = """
             INSERT INTO staff (name, email, mobile_number, user_type, password, department, designation)
             VALUES (%s, %s, %s, %s, %s, %s, %s)
-        """, (name, email, mobile_number, 'staff', hashed_password, department, designation))
-
-        mydb.commit()
-        mycursor.close()
+        """
+        execute_query(query, (name, email, mobile_number, 'staff', hashed_password, department, designation))
 
         flash("Registration successful! Your account is pending approval.", "success")
         return redirect(url_for('login'))
 
     return render_template('staff_register.html')
- 
+
 @app.route('/registration_successfull')
 def registration_successful():
     return render_template('registration_successful.html')
-
-
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -345,7 +527,6 @@ def login():
 
     return render_template('login.html')
 
-
 @app.route('/forgot_password', methods=['GET', 'POST'])
 def forgot_password():
     if request.method == 'POST':
@@ -374,7 +555,6 @@ def forgot_password():
 @app.route('/reset_password/<token>', methods=['GET', 'POST'])
 def reset_password(token):
     try:
-
         email = s.loads(token, salt='password-reset-salt', max_age=3600)
     except:
         flash("The password reset link is invalid or has expired.", "warning")
@@ -384,45 +564,28 @@ def reset_password(token):
         new_password = request.form['password']
         confirm_password = request.form['confirm_password']
 
-      
         if new_password != confirm_password:
             flash("Passwords do not match. Please try again.", "danger")
-            return redirect(url_for('reset_password', token=token))  
+            return redirect(url_for('reset_password', token=token))
 
-     
         hashed_password = sha256_crypt.encrypt(new_password)
 
-        
-        user_type_query = """
-            SELECT 'student' AS user_type FROM student WHERE email = %s
-            UNION
-            SELECT 'teacher' AS user_type FROM teacher WHERE email = %s
-            UNION
-            SELECT 'chairman' AS user_type FROM chairman WHERE email = %s
-            UNION
-            SELECT 'staff' AS user_type FROM staff WHERE email = %s
-        """
-        result = execute_query(user_type_query, (email, email, email, email))
+        # Update password in userss table
+        query = "UPDATE userss SET password = %s WHERE email = %s"
+        execute_query(query, (hashed_password, email))
 
+        # Update password in the specific user type table
+        query = "SELECT user_type FROM userss WHERE email = %s"
+        result = execute_query(query, (email,), fetch=True)
         if result:
             user_type = result[0]['user_type']
-            
-           
-            update_user_type_query = f"UPDATE {user_type} SET password = %s WHERE email = %s"
-            execute_query(update_user_type_query, (hashed_password, email))
-          
-            update_users_table_query = "UPDATE userss SET password = %s WHERE email = %s"
-            execute_query(update_users_table_query, (hashed_password, email))
+            query = f"UPDATE {user_type} SET password = %s WHERE email = %s"
+            execute_query(query, (hashed_password, email))
 
-            flash("Your password has been reset successfully. You can now log in.", "success")
-            return redirect(url_for('login'))
-        else:
-            flash("User not found. Please contact support.", "danger")
-            return redirect(url_for('forgot_password'))
+        flash("Your password has been reset successfully. You can now log in.", "success")
+        return redirect(url_for('login'))
 
     return render_template('reset_password.html', token=token)
-
-
 
 @app.route('/student_profile', methods=['GET', 'POST'])
 def student_profile():
@@ -436,8 +599,8 @@ def student_profile():
                 confirm_password = request.form['confirm_password']
                 if password == confirm_password:
                     hashed_password = sha256_crypt.encrypt(password)
-                    execute_query("UPDATE userss SET password = %s WHERE email = %s", (hashed_password , email))
-                    execute_query("UPDATE student SET password = %s WHERE email = %s", (hashed_password , email))
+                    execute_query("UPDATE userss SET password = %s WHERE email = %s", (hashed_password, email))
+                    execute_query("UPDATE student SET password = %s WHERE email = %s", (hashed_password, email))
                     flash("Password updated successfully!", "success")
                 else:
                     flash("Passwords do not match.", "error")
@@ -453,26 +616,24 @@ def student_profile():
             permanent_address = request.form['permanent_address']
             dob = request.form['dob']
             mobile_number = request.form['mobile_number']
-            execute_query(
-                """
+            
+            query = """
                 UPDATE userss
                 SET reg_no=%s, name=%s, roll_number=%s, department=%s, father_name=%s, mother_name=%s,
                     present_address=%s, permanent_address=%s, dob=%s, mobile_number=%s
                 WHERE email=%s
-                """,
-                (reg_no, name, roll_number, department, father_name, mother_name, present_address, permanent_address, dob, mobile_number, email)
-            )
+            """
+            execute_query(query, (reg_no, name, roll_number, department, father_name, mother_name, 
+                               present_address, permanent_address, dob, mobile_number, email))
             
-            execute_query(
-                """
+            query = """
                 UPDATE student
                 SET reg_no=%s, name=%s, roll_number=%s, department=%s, father_name=%s, mother_name=%s,
                     present_address=%s, permanent_address=%s, dob=%s, mobile_number=%s
                 WHERE email=%s
-                """,
-                (reg_no, name, roll_number, department, father_name, mother_name, present_address, permanent_address, dob, mobile_number, email)
-            )
-            
+            """
+            execute_query(query, (reg_no, name, roll_number, department, father_name, mother_name, 
+                               present_address, permanent_address, dob, mobile_number, email))
             
             flash("Profile updated successfully!", "success")
             return redirect(url_for('student_profile'))
@@ -482,13 +643,10 @@ def student_profile():
     flash("Unauthorized access.", "error")
     return redirect(url_for('login'))
 
-
-
 @app.route('/teacher_profile', methods=['GET', 'POST'])
 def teacher_profile():
     if 'loggedin' in session and session['user_type'] == 'teacher':
         email = session['email']
-
         profile = execute_query("SELECT * FROM userss WHERE email = %s", (email,), fetch=True)[0]
 
         if request.method == 'POST':
@@ -497,45 +655,58 @@ def teacher_profile():
                 confirm_password = request.form['confirm_password']
                 if password == confirm_password:
                     hashed_password = sha256_crypt.encrypt(password)
-                    execute_query("UPDATE userss SET password = %s WHERE email = %s", (hashed_password , email))
+                    execute_query("UPDATE userss SET password = %s WHERE email = %s", (hashed_password, email))
                     flash("Password updated successfully!", "success")
                 else:
                     flash("Passwords do not match.", "error")
                 return redirect(url_for('teacher_profile'))
-            name=request.form['name']
-            designation=request.form['designation']
+            
+            name = request.form['name']
+            designation = request.form['designation']
             department = request.form['department']
             present_address = request.form['present_address']
             permanent_address = request.form['permanent_address']
             dob = request.form['dob']
             mobile_number = request.form['mobile_number']
-            password=request.form['password']
-            confirm_password=request.form['confirm_password']
+            password = request.form['password']
+            confirm_password = request.form['confirm_password']
+            
             if password != confirm_password:
-               flash("do not match confrim password ")
-               return redirect(url_for('teacher_profile'))
+                flash("Passwords do not match", "error")
+                return redirect(url_for('teacher_profile'))
+                
             hashed_password = sha256_crypt.encrypt(password)
-            execute_query(
-                """
+            
+            query = """
                 UPDATE userss
-                SET name=%s,designation=%s,department=%s,password=%s,present_address=%s, permanent_address=%s, dob=%s, 
-                    mobile_number=%s
+                SET name=%s, designation=%s, department=%s, password=%s, present_address=%s, 
+                    permanent_address=%s, dob=%s, mobile_number=%s
                 WHERE email=%s
-                """,
-                ( name,designation,department,hashed_password,present_address, permanent_address, dob, mobile_number, email)
-            )
+            """
+            execute_query(query, (name, designation, department, hashed_password, present_address, 
+                               permanent_address, dob, mobile_number, email))
+            
+            query = """
+                UPDATE teacher
+                SET name=%s, designation=%s, department=%s, password=%s, present_address=%s, 
+                    permanent_address=%s, dob=%s, mobile_number=%s
+                WHERE email=%s
+            """
+            execute_query(query, (name, designation, department, hashed_password, present_address, 
+                               permanent_address, dob, mobile_number, email))
+            
             flash("Profile updated successfully!", "success")
             return redirect(url_for('teacher_profile'))
 
         return render_template('teacher_profile.html', profile=profile)
 
-
+    flash("Unauthorized access.", "error")
+    return redirect(url_for('login'))
 
 @app.route('/chairman_profile', methods=['GET', 'POST'])
 def chairman_profile():
     if 'loggedin' in session and session['user_type'] == 'chairman':
         email = session['email']
-
         profile = execute_query("SELECT * FROM userss WHERE email = %s", (email,), fetch=True)[0]
 
         if request.method == 'POST':
@@ -544,52 +715,63 @@ def chairman_profile():
                 confirm_password = request.form['confirm_password']
                 if password == confirm_password:
                     hashed_password = sha256_crypt.encrypt(password)
-                    execute_query("UPDATE userss SET password = %s WHERE email = %s", (hashed_password , email))
+                    execute_query("UPDATE userss SET password = %s WHERE email = %s", (hashed_password, email))
                     flash("Password updated successfully!", "success")
                 else:
                     flash("Passwords do not match.", "error")
                 return redirect(url_for('chairman_profile'))
-            name=request.form['name']
-            designation=request.form['designation']
+            
+            name = request.form['name']
+            designation = request.form['designation']
             department = request.form['department']
             present_address = request.form['present_address']
             permanent_address = request.form['permanent_address']
             dob = request.form['dob']
             mobile_number = request.form['mobile_number']
-            password=request.form['password']
-            confirm_password=request.form['confirm_password']
+            password = request.form['password']
+            confirm_password = request.form['confirm_password']
+            
             if password != confirm_password:
-               flash("do not match confrim password ")
-               return redirect(url_for('chairman_profile'))
+                flash("Passwords do not match", "error")
+                return redirect(url_for('chairman_profile'))
+                
             hashed_password = sha256_crypt.encrypt(password)
-            execute_query(
-                """
+            
+            query = """
                 UPDATE userss
-                SET name=%s,designation=%s,department=%s,password=%s,present_address=%s, permanent_address=%s, dob=%s, 
-                    mobile_number=%s
+                SET name=%s, designation=%s, department=%s, password=%s, present_address=%s, 
+                    permanent_address=%s, dob=%s, mobile_number=%s
                 WHERE email=%s
-                """,
-                ( name,designation,department,hashed_password,present_address, permanent_address, dob, mobile_number, email)
-            )
+            """
+            execute_query(query, (name, designation, department, hashed_password, present_address, 
+                               permanent_address, dob, mobile_number, email))
+            
+            query = """
+                UPDATE chairman
+                SET name=%s, designation=%s, department=%s, password=%s, present_address=%s, 
+                    permanent_address=%s, dob=%s, mobile_number=%s
+                WHERE email=%s
+            """
+            execute_query(query, (name, designation, department, hashed_password, present_address, 
+                               permanent_address, dob, mobile_number, email))
+            
             flash("Profile updated successfully!", "success")
             return redirect(url_for('chairman_profile'))
 
         return render_template('chairman_profile.html', profile=profile)
 
-
+    flash("Unauthorized access.", "error")
+    return redirect(url_for('login'))
 
 @app.route('/staff_profile', methods=['GET', 'POST'])
 def staff_profile():
     if 'loggedin' in session and session['user_type'] == 'staff':
         email = session['email']
-
         profile = execute_query("SELECT * FROM userss WHERE email = %s", (email,), fetch=True)[0]
+        return render_template('staff_profile.html', profile=profile)
 
-    return render_template('staff_profile.html', profile=profile)
-
-   
-
-
+    flash("Unauthorized access.", "error")
+    return redirect(url_for('login'))
 
 @app.route('/upload_photo', methods=['POST'])
 def upload_photo():
@@ -610,40 +792,29 @@ def upload_photo():
             filename = secure_filename(file.filename)
             file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename).replace("\\", "/")
             file.save(file_path)
+            
+            query = "UPDATE userss SET photo=%s WHERE email=%s"
+            execute_query(query, (filename, email))
+            
             if user_type == 'student':
-             execute_query("UPDATE userss SET photo=%s WHERE email=%s", (filename, email))
-             flash("Profile photo updated successfully!", "success")
-             return redirect(url_for(f'{user_type}_profile'))
-        
-            execute_query("UPDATE userss SET photo=%s WHERE email=%s", (filename, email))
+                query = "UPDATE student SET photo=%s WHERE email=%s"
+                execute_query(query, (filename, email))
+            
             flash("Profile photo updated successfully!", "success")
             return redirect(url_for(f'{user_type}_profile'))
         else:
             flash("Invalid file type!", "danger")
             return redirect(url_for(f'{user_type}_profile'))
+    
     flash("Unauthorized access! Please log in first.", "danger")
     return redirect(url_for('login'))
-  
-        
-   
-
-
-from flask import Flask, render_template, session, redirect, url_for, flash, request
 
 @app.route('/view_results')
 def view_results():
-   
     if 'loggedin' not in session:
         return redirect(url_for('login'))  
     user_type = session.get('user_type')
-
-    
     return render_template('view_results.html', user_type=user_type)
-
-  
-  
-
-
 
 @app.route('/view_attendance', methods=['GET', 'POST'])
 def view_attendance():
@@ -657,8 +828,6 @@ def view_attendance():
         selected_session = request.form.get('session', '').strip()
         semester = request.form.get('semester', '').strip()
         course_code = request.form.get('course_code', '').strip()
-
-        print(f"Form Data - Session: {selected_session}, Semester: {semester}, Course Code: {course_code}")
 
         if not selected_session or not semester or not course_code:
             flash("All fields are required.", "error")
@@ -692,16 +861,15 @@ def view_attendance():
                         SUM(
                             CASE 
                                 WHEN u.timein IS NOT NULL AND u.timeout IS NOT NULL THEN
-                                    TIMESTAMPDIFF(
-                                        MINUTE, 
-                                        GREATEST(c.start_time, LEAST(c.end_time, u.timein)), 
-                                        LEAST(c.end_time, GREATEST(c.start_time, u.timeout))
-                                    )
+                                    EXTRACT(EPOCH FROM (
+                                        LEAST(c.end_time, GREATEST(c.start_time, u.timeout)) - 
+                                        GREATEST(c.start_time, LEAST(c.end_time, u.timein))
+                                    ) / 60
                                 ELSE 0
                             END
                         ) AS total_minutes_present,
                         -- Calculate total duration of the class
-                        TIMESTAMPDIFF(MINUTE, c.start_time, c.end_time) AS total_class_duration
+                        EXTRACT(EPOCH FROM (c.end_time - c.start_time)) / 60 AS total_class_duration
                     FROM 
                         student_course_assign sca
                     JOIN 
@@ -744,16 +912,11 @@ def view_attendance():
                     ac.course_code = %s;
             """
 
-            print(f"Query: {query}")
-            print(f"Params: {selected_session}, {semester}, {course_code}, {selected_session}, {semester}, {course_code}, {course_code}")
-
             attendance_data = execute_query(query, (
                 selected_session, semester, course_code,
                 selected_session, semester, course_code,
                 course_code
             ), fetch=True)
-
-            print(f"Attendance Data: {attendance_data}")
 
             if not attendance_data:
                 flash("No attendance records available for the selected criteria.", "info")
@@ -764,8 +927,6 @@ def view_attendance():
 
     return render_template('view_attendance.html', attendance_data=attendance_data, user_type=user_type)
 
-
-
 @app.route('/change_password', methods=['GET', 'POST'])
 def change_password():
     if 'loggedin' not in session:
@@ -775,7 +936,6 @@ def change_password():
     email = session.get('email') 
     user_type = session.get('user_type')  
 
-   
     if request.method == 'GET':
         return render_template('change_password.html', user_type=user_type)
 
@@ -784,65 +944,57 @@ def change_password():
         new_password = request.form['new_password']
         confirm_password = request.form['confirm_password']
 
-       
-       
-        user = execute_query("SELECT password FROM userss WHERE email = %s", (email,), fetch=True)[0]
-        current_password_hash = user['password']
+        query = "SELECT password FROM userss WHERE email = %s"
+        result = execute_query(query, (email,), fetch=True)
+        if not result:
+            flash("User not found.", "error")
+            return redirect(url_for('change_password'))
+            
+        current_password_hash = result[0]['password']
 
-          
         if not sha256_crypt.verify(old_password, current_password_hash):
-                flash("Old password is incorrect.", "error")
-                return redirect(url_for('change_password'))
+            flash("Old password is incorrect.", "error")
+            return redirect(url_for('change_password'))
 
-          
         if new_password != confirm_password:
-                flash("New password and confirm password do not match.", "error")
-                return redirect(url_for('change_password'))
+            flash("New password and confirm password do not match.", "error")
+            return redirect(url_for('change_password'))
 
-      
         new_password_hash = sha256_crypt.encrypt(new_password)
 
-           
-        execute_query(
-                "UPDATE userss SET password = %s WHERE email = %s", 
-                (new_password_hash, email)
-            )
-        execute_query(
-                "UPDATE student SET password = %s WHERE email = %s", 
-                (new_password_hash, email)
-            )
+        query = "UPDATE userss SET password = %s WHERE email = %s"
+        execute_query(query, (new_password_hash, email))
+
+        if user_type == 'student':
+            query = "UPDATE student SET password = %s WHERE email = %s"
+            execute_query(query, (new_password_hash, email))
 
         flash("Password updated successfully.", "success")
         return redirect(url_for('change_password'))
-       
-
 
 @app.route('/add_results', methods=['GET', 'POST'])
 def add_results():
+    if 'loggedin' not in session or session.get('user_type') != 'teacher':
+        return redirect(url_for('login'))
+    
     return render_template('add_results.html')
 
- 
 @app.route('/logout')
 def logout():
     session.clear()  
     flash("You have been logged out successfully.", "info")
     return redirect(url_for('login'))
 
-from passlib.hash import sha256_crypt
-
-from passlib.hash import sha256_crypt  
-  
 @app.route('/edit_profile', methods=['GET', 'POST'])
 def edit_profile():
     if 'loggedin' not in session:
         flash("Please log in to access your profile.", "error")
         return redirect(url_for('login'))
 
-    email = session.get('email')
-    user_type = session.get('user_type')
+    email = session['email']
+    user_type = session['user_type']
 
     try:
-       
         profile = execute_query("SELECT * FROM userss WHERE email = %s", (email,), fetch=True)[0]
     except IndexError:
         flash("Profile not found.", "error")
@@ -851,29 +1003,23 @@ def edit_profile():
     if request.method == 'POST':
         current_password = request.form.get('current_password')
 
-        
         if not sha256_crypt.verify(current_password, profile['password']):
             flash("Incorrect current password. Please try again.", "error")
             return redirect(url_for('edit_profile'))
 
-       
         name = request.form.get('name')
         mobile_number = request.form.get('mobile_number')
         present_address = request.form.get('present_address')
         permanent_address = request.form.get('permanent_address')
 
         try:
-           
-            execute_query(
-                """
+            query = """
                 UPDATE userss
                 SET name=%s, mobile_number=%s, present_address=%s, permanent_address=%s
                 WHERE email=%s
-                """,
-                (name, mobile_number, present_address, permanent_address, email)
-            )
+            """
+            execute_query(query, (name, mobile_number, present_address, permanent_address, email))
 
-            
             if user_type == 'student':
                 reg_no = request.form.get('reg_no')
                 roll_number = request.form.get('roll_number')
@@ -882,65 +1028,56 @@ def edit_profile():
                 mother_name = request.form.get('mother_name')
                 dob = request.form.get('dob')
 
-                execute_query(
-                    """
+                query = """
                     UPDATE student
                     SET name=%s, mobile_number=%s, present_address=%s, permanent_address=%s,
                         reg_no=%s, roll_number=%s, department=%s, father_name=%s, mother_name=%s, dob=%s
                     WHERE email=%s
-                    """,
-                    (name, mobile_number, present_address, permanent_address,
-                     reg_no, roll_number, department, father_name, mother_name, dob, email)
-                )
+                """
+                execute_query(query, (name, mobile_number, present_address, permanent_address,
+                                   reg_no, roll_number, department, father_name, mother_name, dob, email))
 
             elif user_type == 'teacher':
                 designation = request.form.get('designation')
                 department = request.form.get('department')
                 dob = request.form.get('dob')
-                
 
-                execute_query(
-                    """
+                query = """
                     UPDATE teacher
                     SET name=%s, mobile_number=%s, present_address=%s, permanent_address=%s,
                         designation=%s, department=%s, dob=%s
                     WHERE email=%s
-                    """,
-                    (name, mobile_number, present_address, permanent_address,
-                     designation, department, dob, email)
-                )
+                """
+                execute_query(query, (name, mobile_number, present_address, permanent_address,
+                             designation, department, dob, email))
 
             elif user_type == 'chairman':
                 designation = request.form.get('designation')
                 department = request.form.get('department')
                 dob = request.form.get('dob')
 
-                execute_query(
-                    """
+                query = """
                     UPDATE chairman
                     SET name=%s, mobile_number=%s, present_address=%s, permanent_address=%s,
                         designation=%s, department=%s, dob=%s
                     WHERE email=%s
-                    """,
-                    (name, mobile_number, present_address, permanent_address,
-                     designation, department, dob, email)
-                )
+                """
+                execute_query(query, (name, mobile_number, present_address, permanent_address,
+                             designation, department, dob, email))
 
             elif user_type == 'staff':
                 designation = request.form.get('designation')
                 department = request.form.get('department')
                 dob = request.form.get('dob')
 
-                execute_query(
-                    """
+                query = """
                     UPDATE staff
                     SET name=%s, mobile_number=%s, present_address=%s, permanent_address=%s,
                         designation=%s, department=%s, dob=%s
                     WHERE email=%s
-                    """,
-                    (name, mobile_number, present_address, permanent_address,
-                     designation, department, dob, email)
-                )
+                """
+                execute_query(query, (name, mobile_number, present_address, permanent_address,
+                             designation, department, dob, email))
 
             else:
                 flash("Unknown user type.", "error")
@@ -953,7 +1090,6 @@ def edit_profile():
             flash(f"An error occurred: {str(e)}", "error")
             return redirect(url_for('edit_profile'))
 
-    
     if user_type == 'student':
         return render_template('studentedit_profile.html', profile=profile, user_type=user_type)
     elif user_type == 'teacher':
@@ -966,81 +1102,58 @@ def edit_profile():
         flash("Unknown user type.", "error")
         return redirect(url_for('logout'))
 
-
-
-from flask import jsonify, request, session
-import traceback
-
 @app.route('/submit_marks', methods=['POST'])
 def submit_marks():
     try:
-       
-        print("Session data:", session)
+        if 'loggedin' not in session or session.get('user_type') != 'teacher':
+            return jsonify({"error": "Unauthorized"}), 403
 
-        
         teacher_email = session.get('email')
-        if not teacher_email:
-            return jsonify({"error": "Unauthorized: Please log in"}), 403
-
-        
         data = request.json
-        print("Received data:", data)  
-        
-        if not data or 'marks' not in data:
-            return jsonify({"error": "Marks data is required"}), 400
+        marks = data.get("marks", [])
 
-        marks = data.get('marks', [])
         if not marks:
             return jsonify({"error": "No marks provided"}), 400
 
-        
         course_code = marks[0].get('course_code')
         exam_type = marks[0].get('exam_type')
 
         if not course_code or not exam_type:
             return jsonify({"error": "Course code and exam type are required"}), 400
 
-        cursor = mydb.cursor(dictionary=True)
-
-        
-        verify_query = """
-            SELECT 1 FROM teacher_course_assign WHERE email = %s AND course_code = %s
+        # Verify teacher is assigned to this course
+        query = """
+            SELECT 1 FROM teacher_course_assign 
+            WHERE email = %s AND course_code = %s
         """
-        cursor.execute(verify_query, (teacher_email, course_code,))
-        if not cursor.fetchone():
+        result = execute_query(query, (teacher_email, course_code), fetch=True)
+        if not result:
             return jsonify({"error": "You are not assigned to this course"}), 403
 
-       
+        # Process marks
         for mark in marks:
-            
             required_fields = ['roll_number', 'session', 'semester', 'course_code', 'exam_type', 'marks']
             if not all(field in mark for field in required_fields):
                 return jsonify({"error": f"Invalid mark entry: {mark}"}), 400
 
+            # Use PostgreSQL's ON CONFLICT syntax
             query = """
                 INSERT INTO result (roll_number, session, semester, course_code, exam_type, marks)
                 VALUES (%s, %s, %s, %s, %s, %s)
-                ON DUPLICATE KEY UPDATE marks = %s
+                ON CONFLICT (roll_number, session, semester, course_code, exam_type) 
+                DO UPDATE SET marks = EXCLUDED.marks
             """
             params = (
                 mark['roll_number'], mark['session'], mark['semester'],
-                mark['course_code'], mark['exam_type'], mark['marks'], mark['marks']
+                mark['course_code'], mark['exam_type'], mark['marks']
             )
-            cursor.execute(query, params)
+            execute_query(query, params)
 
-       
-        mydb.commit()
         return jsonify({"message": "Marks submitted successfully"}), 200
 
     except Exception as e:
-       
         print(f"Error submitting marks: {e}")
-        traceback.print_exc()  
-        mydb.rollback()
         return jsonify({"error": f"Failed to submit marks: {str(e)}"}), 500
-    
-
-import traceback
 
 @app.route('/get_results', methods=['GET'])
 def get_results():
@@ -1058,14 +1171,7 @@ def get_results():
     """
 
     try:
-        
-        print(f"Executing query: {query}")
-        print(f"Parameters: roll_number={roll_number}, course_code={course_code}, exam_type={exam_type}")
-
         results = execute_query(query, (roll_number, course_code, exam_type), fetch=True)
-
-        
-        print(f"Results from database: {results}")
 
         if not results:
             return jsonify({"results": []})
@@ -1079,27 +1185,21 @@ def get_results():
                 'marks': result['marks']
             })
 
-        
-        print(f"Returning data: {results_data}")
-
         return jsonify({"results": results_data})
 
     except Exception as e:
         print(f"Database Error: {e}")
         return jsonify({"error": "Failed to fetch results from the database"}), 500
-    
+
 @app.route('/get_students', methods=['GET'])
 def get_students():
-    
     session_value = request.args.get('session')
     semester = request.args.get('semester')
     course_code = request.args.get('course_code')
 
-    
     if not (session_value and semester and course_code):
         return jsonify({"error": "Missing required parameters"}), 400
 
-   
     query = """
     SELECT roll_number AS id 
     FROM student_course_assign
@@ -1107,7 +1207,6 @@ def get_students():
     """
 
     try:
-       
         students = execute_query(query, (session_value, semester, course_code), fetch=True)
         if not students:
             return jsonify({"students": []})  
@@ -1115,27 +1214,22 @@ def get_students():
     except Exception as e:
         print(f"Database Error: {e}")
         return jsonify({"error": "Failed to fetch students from the database"}), 500
-    
- 
-
-
-
-
-
-def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 @app.route('/add_notice', methods=['POST', 'GET'])
 def add_notice():
+    if 'loggedin' not in session or session.get('user_type') not in ['chairman', 'teacher', 'staff']:
+        flash("Unauthorized access.", "error")
+        return redirect(url_for('login'))
+
     if request.method == 'POST':
         title = request.form.get('title')
         content = request.form.get('content')
         date = request.form.get('date')
-        posted_by = request.form.get('posted_by')
+        posted_by = session.get('email')
         file = request.files.get('file')
 
-        if not title or not content or not date or not posted_by:
-            flash("All fields are required!", "danger")
+        if not title or not content or not date:
+            flash("All fields except file are required!", "danger")
             return redirect(url_for('add_notice'))
 
         file_url = None
@@ -1144,11 +1238,10 @@ def add_notice():
             file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
             file_url = f"/{UPLOAD_FOLDER}/{filename}" 
         elif file:
-            flash("Invalid file type. Only PDF, JPG, JPEG, and PNG are allowed.", "danger")
+            flash("Invalid file type. Only JPG, JPEG, and PNG are allowed.", "danger")
             return redirect(url_for('add_notice'))
 
         try:
-    
             query = """
                 INSERT INTO notices (title, content, posted_by, date, file_url)
                 VALUES (%s, %s, %s, %s, %s)
@@ -1164,41 +1257,44 @@ def add_notice():
 
     return render_template('add_notice.html')
 
-
-
-
-
-    
 @app.route('/notice_board', methods=['GET'])
 def notice_board():
     try:
-        cursor = mydb.cursor()
-        query = "SELECT title, content, posted_by, date, file_url FROM notices ORDER BY date DESC"
-        cursor.execute(query)
-        notices = cursor.fetchall()
-        cursor.close()
+        query = """
+            SELECT n.title, n.content, u.name as posted_by, n.date, n.file_url 
+            FROM notices n
+            JOIN userss u ON n.posted_by = u.email
+            ORDER BY n.date DESC
+        """
+        notices = execute_query(query, fetch=True)
         error = None
     except Exception as e:
         print(f"Error fetching notices: {e}")
         notices = []
         error = "Failed to load notices. Please try again later."
 
-   
     user_type = session.get('user_type', 'Guest')
-
     return render_template('notice_board.html', notices=notices, error=error, user_type=user_type)
-
 
 @app.route('/student_course_assign', methods=['GET', 'POST'])
 def student_course_assign():
+    if 'loggedin' not in session or session.get('user_type') not in ['chairman', 'staff']:
+        flash("Unauthorized access.", "error")
+        return redirect(url_for('login'))
     return render_template('student_course_assign.html')
 
 @app.route('/teacher_course_assign', methods=['GET', 'POST'])
 def teacher_course_assign():
+    if 'loggedin' not in session or session.get('user_type') not in ['chairman', 'staff']:
+        flash("Unauthorized access.", "error")
+        return redirect(url_for('login'))
     return render_template('teacher_course_assign.html')
 
 @app.route('/submit_course_assignments', methods=['POST'])
 def submit_course_assignments():
+    if 'loggedin' not in session or session.get('user_type') not in ['chairman', 'staff']:
+        return jsonify({"error": "Unauthorized"}), 403
+
     data = request.json
     students = data.get("students")
 
@@ -1207,13 +1303,16 @@ def submit_course_assignments():
 
     try:
         for student in students:
+            # Use PostgreSQL's ON CONFLICT syntax
             query = """
-            INSERT INTO student_course_assign (roll_number, session, semester, course_code)
-            VALUES (%s, %s, %s, %s)
+                INSERT INTO student_course_assign (roll_number, session, semester, course_code, course_name, department)
+                VALUES (%s, %s, %s, %s, %s, %s)
+                ON CONFLICT (roll_number, session, semester, course_code) 
+                DO UPDATE SET course_name = EXCLUDED.course_name, department = EXCLUDED.department
             """
             execute_query(query, (
                 student["roll_number"], student["session"], student["semester"],
-                student["course_code"]
+                student["course_code"], student["course_name"], student["department"]
             ))
 
         return jsonify({"success": True})
@@ -1223,10 +1322,10 @@ def submit_course_assignments():
 
 @app.route('/fetch_students', methods=['GET'])
 def fetch_students():
-    session = request.args.get('session')
+    session_value = request.args.get('session')
     semester = request.args.get('semester')
 
-    if not (session and semester):
+    if not (session_value and semester):
         return jsonify({"error": "Missing required parameters"}), 400
 
     query = """
@@ -1234,12 +1333,10 @@ def fetch_students():
     FROM student
     WHERE session = %s AND semester = %s
     """
-    params = (session, semester)
+    params = (session_value, semester)
 
     try:
         students = execute_query(query, params, fetch=True)
-        print(f"Query: {query % params}") 
-        print(f"Students Fetched: {students}")  
         if not students:
             return jsonify({"students": []}) 
         return jsonify({"students": students}) 
@@ -1247,140 +1344,133 @@ def fetch_students():
         print(f"Database Error: {e}")
         return jsonify({"error": "Failed to fetch students from the database"}), 500
 
-
 @app.route('/submit_students', methods=['POST'])
 def submit_students():
+    if 'loggedin' not in session or session.get('user_type') not in ['chairman', 'staff']:
+        return jsonify({"error": "Unauthorized"}), 403
+
     try:
-        
         data = request.json
         students = data.get('students', [])
 
-        cursor = mydb.cursor()
-
-        sql = """
-            INSERT INTO student_course_assign (roll_number, session, semester, course_code, course_name, department)
-            VALUES (%s, %s, %s, %s, %s, %s)
-            ON DUPLICATE KEY UPDATE
-            course_name = VALUES(course_name)
-        """
-
         for student in students:
-            cursor.execute(sql, (
+            # Use PostgreSQL's ON CONFLICT syntax
+            query = """
+                INSERT INTO student_course_assign (roll_number, session, semester, course_code, course_name, department)
+                VALUES (%s, %s, %s, %s, %s, %s)
+                ON CONFLICT (roll_number, session, semester, course_code) 
+                DO UPDATE SET course_name = EXCLUDED.course_name, department = EXCLUDED.department
+            """
+            execute_query(query, (
                 student['roll_number'],
                 student['session'],
                 student['semester'],
-                
                 student['course_code'],
                 student['course_name'],
                 student['department'],
-                
             ))
-
-        mydb.commit()
 
         return jsonify({"message": "Students data successfully saved!"})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-   
+
 @app.route('/add_course', methods=['GET', 'POST'])
 def add_course():
+    if 'loggedin' not in session or session.get('user_type') not in ['chairman', 'staff']:
+        flash("Unauthorized access.", "error")
+        return redirect(url_for('login'))
     return render_template('add_course.html') 
-
-
 
 @app.route('/add_new_course', methods=['POST'])
 def add_new_course():
+    if 'loggedin' not in session or session.get('user_type') not in ['chairman', 'staff']:
+        return jsonify({"error": "Unauthorized"}), 403
+
     try:
-        
         department = request.json.get('department')
         semester = request.json.get('semester')
         course_code = request.json.get('course_code')
         course_name = request.json.get('course_name')
 
-        if not semester or not course_code or not course_name or not department :
+        if not semester or not course_code or not course_name or not department:
             return {"error": "All fields are required!"}, 400
 
-        cursor = mydb.cursor()
-        sql = "INSERT INTO course (semester, course_code, course_name,department) VALUES (%s, %s, %s, %s)"
-        cursor.execute(sql, (semester, course_code, course_name, department))
-
-        mydb.commit()
+        # Use PostgreSQL's ON CONFLICT syntax
+        query = """
+            INSERT INTO course (semester, course_code, course_name, department)
+            VALUES (%s, %s, %s, %s)
+            ON CONFLICT (course_code) 
+            DO UPDATE SET course_name = EXCLUDED.course_name, semester = EXCLUDED.semester, department = EXCLUDED.department
+        """
+        execute_query(query, (semester, course_code, course_name, department))
 
         return {"message": "Course added successfully!"}, 200
-
     except Exception as e:
         print(f"Error: {str(e)}") 
         return {"error": str(e)}, 500
 
-
-
 @app.route('/get_courses', methods=['GET'])
 def get_courses():
+    semester = request.args.get('semester')
+    department = request.args.get('department')
+    if not semester or not department:
+        return {"error": "Semester and department are required"}, 400
+
+    query = """
+    SELECT course_code, course_name 
+    FROM course 
+    WHERE semester = %s AND department = %s
+    """
+
     try:
-        semester = request.args.get('semester')
-        department = request.args.get('department')
-        if not semester or not department:
-            return {"error": "Semester and department are required"}, 400
-
-        cursor = mydb.cursor(dictionary=True)
-        sql = "SELECT course_code, course_name FROM course WHERE semester = %s AND department = %s"
-        cursor.execute(sql, (semester, department))
-        courses = cursor.fetchall()
-
+        courses = execute_query(query, (semester, department), fetch=True)
         return {"courses": courses}, 200
-
     except Exception as e:
         print(f"Error: {str(e)}")
         return {"error": str(e)}, 500
 
-    
-
-
 @app.route('/get_teachers', methods=['GET'])
 def get_teachers():
+    department = request.args.get('department')
+
+    if not department:
+        return jsonify({"error": "Department is required"}), 400
+
+    query = """
+        SELECT name, id as teacher_id, email
+        FROM teacher
+        WHERE department = %s
+    """
+
     try:
-        department = request.args.get('department')
-
-        if not department:
-            return jsonify({"error": "Department is required"}), 400
-
-        query = """
-            SELECT name, teacher_id, email
-            FROM teacher
-            WHERE department = %s
-        """
-        params = (department,)
-        teachers = execute_query(query, params, fetch=True)
-
+        teachers = execute_query(query, (department,), fetch=True)
         if not teachers:
             return jsonify({"teachers": []})
-
         return jsonify({"teachers": teachers}), 200
     except Exception as e:
         print(f"Error fetching teachers: {e}")
         return jsonify({"error": "Failed to fetch teachers"}), 500
 
-
-
 @app.route('/assign_course_to_teacher', methods=['POST'])
 def assign_course_to_teacher():
+    if 'loggedin' not in session or session.get('user_type') not in ['chairman', 'staff']:
+        return jsonify({"error": "Unauthorized"}), 403
+
     try:
-       
         data = request.json
         department = data.get('department')
-        teacher_id = data.get('teacher_id')  
-        session = data.get('session')
+        teacher_id = data.get('teacher_id')
+        session_value = data.get('session')
         semester = data.get('semester')
         course_code = data.get('courseCode')
         course_name = data.get('courseName')
 
-       
-        if not all([department, teacher_id, session, semester, course_code, course_name]):
+        if not all([department, teacher_id, session_value, semester, course_code, course_name]):
             return jsonify({"error": "All fields are required"}), 400
 
-        teacher_query = "SELECT name, email FROM teacher WHERE teacher_id = %s AND department = %s"
-        teacher_params = (teacher_id, department)
-        teacher_result = execute_query(teacher_query, teacher_params, fetch=True)
+        # Get teacher info
+        query = "SELECT name, email FROM teacher WHERE id = %s AND department = %s"
+        teacher_result = execute_query(query, (teacher_id, department), fetch=True)
 
         if not teacher_result:
             return jsonify({"error": "Teacher not found in the specified department"}), 404
@@ -1388,65 +1478,64 @@ def assign_course_to_teacher():
         teacher_name = teacher_result[0]['name']
         teacher_email = teacher_result[0]['email']
 
+        # Use PostgreSQL's ON CONFLICT syntax
         query = """
             INSERT INTO teacher_course_assign (teacher_name, department, session, semester, course_code, course_name, email)
             VALUES (%s, %s, %s, %s, %s, %s, %s)
-            ON DUPLICATE KEY UPDATE
-            course_name = VALUES(course_name),
-            email = VALUES(email)
+            ON CONFLICT (teacher_name, session, semester, course_code) 
+            DO UPDATE SET course_name = EXCLUDED.course_name, email = EXCLUDED.email
         """
-        params = (teacher_name, department, session, semester, course_code, course_name, teacher_email)
-
-        execute_query(query, params, fetch=False)
+        execute_query(query, (teacher_name, department, session_value, semester, course_code, course_name, teacher_email))
 
         return jsonify({"message": "Course successfully assigned to teacher!"}), 200
     except Exception as e:
         print(f"Error assigning course to teacher: {e}")
         return jsonify({"error": "Failed to assign course to teacher"}), 500
-    
+
 @app.route('/get_studentss', methods=['GET'])
 def get_studentss():
+    if 'loggedin' not in session or session.get('user_type') != 'teacher':
+        return jsonify({"error": "Unauthorized"}), 403
+
     try:
-        teacher_name = session.get('teacher_name')
-        session_year = request.args.get('session')
+        teacher_email = session.get('email')
+        session_value = request.args.get('session')
         semester = request.args.get('semester')
         course_code = request.args.get('course_code')
 
-        if not all([teacher_name, session_year, semester, course_code]):
+        if not all([teacher_email, session_value, semester, course_code]):
             return jsonify({"error": "All parameters are required"}), 400
 
-        cursor = mydb.cursor(dictionary=True)
-
-        verify_query = """
-            SELECT 1
-            FROM teacher_course_assign
-            WHERE teacher_name = %s AND course_code = %s AND semester = %s
+        # Verify teacher is assigned to this course
+        query = """
+            SELECT 1 FROM teacher_course_assign 
+            WHERE email = %s AND course_code = %s AND semester = %s
         """
-        cursor.execute(verify_query, (teacher_name, course_code, semester))
-        if not cursor.fetchone():
+        result = execute_query(query, (teacher_email, course_code, semester), fetch=True)
+        if not result:
             return jsonify({"error": "You are not assigned to this course"}), 403
 
-        students_query = """
+        # Get students for this course
+        query = """
             SELECT s.roll_number, s.name
             FROM student s
-            INNER JOIN enrollment e ON s.roll_number = e.roll_number
-            WHERE e.session = %s AND e.semester = %s AND e.course_code = %s
+            JOIN student_course_assign sca ON s.roll_number = sca.roll_number
+            WHERE sca.session = %s AND sca.semester = %s AND sca.course_code = %s
         """
-        cursor.execute(students_query, (session_year, semester, course_code))
-        students = cursor.fetchall()
+        students = execute_query(query, (session_value, semester, course_code), fetch=True)
 
         return jsonify({"students": students}), 200
-
     except Exception as e:
         print(f"Error fetching students: {e}")
         return jsonify({"error": "Failed to fetch students"}), 500
 
-
 @app.route('/get_coursess', methods=['GET'])
 def get_coursess():
+    if 'loggedin' not in session or session.get('user_type') != 'teacher':
+        return jsonify({"error": "Unauthorized"}), 403
+
     try:
-      
-        teacher_email = session.get('email')  
+        teacher_email = session.get('email')
         if not teacher_email:
             return jsonify({"error": "Teacher email is required"}), 400
 
@@ -1455,41 +1544,36 @@ def get_coursess():
             FROM teacher_course_assign
             WHERE email = %s
         """
-        params = (teacher_email,)
-
-        
-        courses = execute_query(query, params, fetch=True)
+        courses = execute_query(query, (teacher_email,), fetch=True)
 
         return jsonify({"courses": courses if courses else []}), 200
     except Exception as e:
         print(f"Error fetching courses: {e}")
         return jsonify({"error": "Failed to fetch courses"}), 500
-    
-    
+
 @app.route('/submit_feedback', methods=['POST'])
 def submit_feedback():
+    if 'loggedin' not in session or session.get('user_type') != 'student':
+        flash("Unauthorized access.", "error")
+        return redirect(url_for('login'))
+
     try:
         email = session.get('email')
-        if not email:
-            flash("You are not logged in or your session has expired.", "error")
-            return redirect(url_for('login'))
-
         query = "SELECT roll_number FROM userss WHERE email = %s"
         result = execute_query(query, (email,), fetch=True)
         if not result:
             flash("Unable to fetch your roll number. Please contact the administrator.", "error")
             return redirect(url_for('feedback'))
-        roll_number = result[0]['roll_number']  
+        roll_number = result[0]['roll_number']
         
         course_code = request.form.get('course')
-        rating = request.form.get('rating') 
-        comment = request.form.get('comment') or None  
+        rating = request.form.get('rating')
+        comment = request.form.get('comment') or None
 
         if not roll_number or not course_code or not rating:
             flash("All fields except 'Additional Comments' are required!", "error")
             return redirect(url_for('feedback'))
 
-      
         try:
             rating = int(rating)
             if not (1 <= rating <= 5):
@@ -1498,36 +1582,32 @@ def submit_feedback():
             flash("Invalid rating value!", "error")
             return redirect(url_for('feedback'))
 
-       
-        enrolled_courses_query = """
-            SELECT course_code 
-            FROM student_course_assign 
-            WHERE roll_number = %s
-        """
-        enrolled_courses = execute_query(enrolled_courses_query, (roll_number,), fetch=True)
-        enrolled_course_codes = [course['course_code'] for course in enrolled_courses]
-
-        if course_code not in enrolled_course_codes:
-            flash("You are not enrolled in the selected course and cannot provide feedback for it.", "error")
-            return redirect(url_for('feedback'))
-
-        feedback_check_query = """
-            SELECT COUNT(*) AS feedback_count
-            FROM course_feedback
+        # Check if student is enrolled in this course
+        query = """
+            SELECT 1 FROM student_course_assign 
             WHERE roll_number = %s AND course_code = %s
         """
-        feedback_check_result = execute_query(feedback_check_query, (roll_number, course_code), fetch=True)
-        feedback_count = feedback_check_result[0]['feedback_count']
+        enrolled = execute_query(query, (roll_number, course_code), fetch=True)
+        if not enrolled:
+            flash("You are not enrolled in the selected course.", "error")
+            return redirect(url_for('feedback'))
 
-        if feedback_count > 0:
+        # Check if feedback already submitted
+        query = """
+            SELECT 1 FROM course_feedback 
+            WHERE roll_number = %s AND course_code = %s
+        """
+        feedback_exists = execute_query(query, (roll_number, course_code), fetch=True)
+        if feedback_exists:
             flash("You have already submitted feedback for this course.", "error")
             return redirect(url_for('feedback'))
 
-        feedback_query = """
+        # Insert feedback
+        query = """
             INSERT INTO course_feedback (roll_number, course_code, rating, comment)
             VALUES (%s, %s, %s, %s)
         """
-        execute_query(feedback_query, (roll_number, course_code, rating, comment), fetch=False)
+        execute_query(query, (roll_number, course_code, rating, comment))
 
         flash("Feedback submitted successfully!", "success")
         return redirect(url_for('feedback'))
@@ -1539,26 +1619,28 @@ def submit_feedback():
 
 @app.route('/feedback', methods=['GET'])
 def feedback():
-    email = session.get('email')
-    if not email:
-        flash("You are not logged in or your session has expired.", "error")
+    if 'loggedin' not in session or session.get('user_type') != 'student':
+        flash("Unauthorized access.", "error")
         return redirect(url_for('login'))
 
+    email = session.get('email')
     query = """
         SELECT c.course_code, c.course_name
-        FROM student_course_assign e
-        INNER JOIN course c ON e.course_code = c.course_code
-        INNER JOIN userss u ON u.roll_number = e.roll_number
+        FROM student_course_assign sca
+        JOIN course c ON sca.course_code = c.course_code
+        JOIN userss u ON u.roll_number = sca.roll_number
         WHERE u.email = %s
     """
     courses = execute_query(query, (email,), fetch=True)
 
     return render_template('feedback.html', courses=courses)
 
-
-
 @app.route('/show_feedback', methods=['GET', 'POST'])
 def show_feedback():
+    if 'loggedin' not in session or session.get('user_type') not in ['chairman', 'teacher']:
+        flash("Unauthorized access.", "error")
+        return redirect(url_for('login'))
+
     try:
         courses_query = "SELECT course_code, course_name FROM course"
         courses = execute_query(courses_query, fetch=True)
@@ -1574,34 +1656,43 @@ def show_feedback():
                 flash("Please select a course.", "error")
                 return redirect(url_for('show_feedback'))
 
-            feedback_query = """
+            # Get feedback with student names
+            query = """
                 SELECT 
+                    cf.id,
+                    cf.roll_number,
+                    s.name as student_name,
                     cf.course_code,
                     c.course_name,
                     cf.rating,
-                    cf.comment
+                    cf.comment,
+                    cf.created_at
                 FROM 
                     course_feedback cf
-                INNER JOIN 
+                JOIN 
+                    student s ON cf.roll_number = s.roll_number
+                JOIN 
                     course c ON cf.course_code = c.course_code
                 WHERE 
                     cf.course_code = %s
+                ORDER BY 
+                    cf.created_at DESC
             """
-            feedback_data = execute_query(feedback_query, (selected_course,), fetch=True)
+            feedback_data = execute_query(query, (selected_course,), fetch=True)
 
             if feedback_data:
                 # Calculate average rating
                 total_ratings = sum(feedback['rating'] for feedback in feedback_data)
-                average_rating = total_ratings / len(feedback_data)
+                average_rating = round(total_ratings / len(feedback_data), 2)
 
                 # Prepare chart data
-                rating_counts = {}
+                rating_counts = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
                 for feedback in feedback_data:
                     rating = feedback['rating']
-                    rating_counts[rating] = rating_counts.get(rating, 0) + 1
+                    rating_counts[rating] += 1
 
                 chart_data = {
-                    "labels": [f"Rating {rating}" for rating in rating_counts.keys()],
+                    "labels": ["1 Star", "2 Stars", "3 Stars", "4 Stars", "5 Stars"],
                     "counts": list(rating_counts.values())
                 }
 
@@ -1613,151 +1704,142 @@ def show_feedback():
             selected_course=selected_course,
             average_rating=average_rating
         )
-
     except Exception as e:
         print(f"Error fetching feedback data: {e}")
         flash("Failed to fetch feedback data. Please try again.", "error")
         return redirect(url_for('chairman_profile'))
 
-
-
-
-
-
 @app.route('/add_class', methods=['GET', 'POST'])
 def add_class():
+    if 'loggedin' not in session or session.get('user_type') not in ['chairman', 'teacher']:
+        flash("Unauthorized access.", "error")
+        return redirect(url_for('login'))
+
     if request.method == 'POST':
-        # Get form data
-        session = request.form.get('session')
+        session_value = request.form.get('session')
         semester = request.form.get('semester')
         course_code = request.form.get('course_code')
         class_date = request.form.get('class_date')
-        start_time = request.form.get('start_time')  # Fixed variable name
-        end_time = request.form.get('end_time')  # Fixed variable name
+        start_time = request.form.get('start_time')
+        end_time = request.form.get('end_time')
 
-        # Validate the data
-        if not session or not semester or not course_code or not class_date or not start_time or not end_time:
+        if not all([session_value, semester, course_code, class_date, start_time, end_time]):
             flash("All fields are required.", "error")
             return redirect(url_for('add_class'))
 
         try:
+            # Verify course exists
+            query = "SELECT 1 FROM course WHERE course_code = %s"
+            course_exists = execute_query(query, (course_code,), fetch=True)
+            if not course_exists:
+                flash("Invalid course code.", "error")
+                return redirect(url_for('add_class'))
+
+            # Insert class
             query = """
                 INSERT INTO classes (session, semester, course_code, class_date, start_time, end_time)
                 VALUES (%s, %s, %s, %s, %s, %s)
             """
-            execute_query(query, (session, semester, course_code, class_date, start_time, end_time))
+            execute_query(query, (session_value, semester, course_code, class_date, start_time, end_time))
             flash("Class added successfully!", "success")
             return redirect(url_for('add_class'))
         except Exception as e:
             flash(f"An error occurred: {str(e)}", "error")
             return redirect(url_for('add_class'))
 
-    # For GET requests, render the form
     return render_template('add_class.html')
-
-
-
-
-
-def send_approval_email(user_email):
-    try:
-        msg = Message(
-            subject="Your Account Has Been Approved",
-            sender=os.environ.get('MAIL_DEFAULT_SENDER', 'noreply@yourdomain.com'),
-            recipients=[user_email],
-            body=f"""Dear User,
-            
-Your account has been approved by the chairman. You can now log in to the system.
-
-Best regards,
-Your Organization"""
-        )
-        mail.send(msg)
-        app.logger.info(f"Approval email sent to {user_email}")
-        return True
-    except Exception as e:
-        app.logger.error(f"Failed to send email: {e}")
-        return False
 
 @app.route('/chairman/approvals', methods=['GET', 'POST'])
 def chairman_approvals():
+    if 'loggedin' not in session or session.get('user_type') != 'chairman':
+        flash("Unauthorized access.", "error")
+        return redirect(url_for('login'))
+
     if request.method == 'POST':
         user_id = request.form.get('user_id')
-        action = request.form.get('action')  # 'approve' or 'reject'
+        action = request.form.get('action')
+
+        if not user_id or action not in ['approve', 'reject']:
+            flash("Invalid request.", "error")
+            return redirect(url_for('chairman_approvals'))
 
         if action == 'approve':
-            # Fetch the user's email before approving
+            # Get user email before approving
             query = "SELECT email FROM userss WHERE id = %s"
             user = execute_query(query, (user_id,), fetch=True)
-            if user:
-                user_email = user[0]['email']
+            if not user:
+                flash("User not found.", "error")
+                return redirect(url_for('chairman_approvals'))
 
-                # Update the user's is_approved status to TRUE
-                query = "UPDATE userss SET is_approved = TRUE WHERE id = %s"
-                execute_query(query, (user_id,))
+            user_email = user[0]['email']
 
-                # Send approval email
-                send_approval_email(user_email)
+            # Update approval status
+            query = "UPDATE userss SET is_approved = TRUE WHERE id = %s"
+            execute_query(query, (user_id,))
 
-                flash("User approved successfully! An email has been sent to the user.", "success")
-            else:
-                flash("User not found!", "error")
+            # Send approval email
+            send_approval_email(user_email)
 
+            flash("User approved successfully! An email has been sent to the user.", "success")
         elif action == 'reject':
-            # Delete the user or mark them as rejected
+            # Delete user
             query = "DELETE FROM userss WHERE id = %s"
             execute_query(query, (user_id,))
             flash("User rejected successfully!", "success")
 
-    # Fetch all pending users
-    query = "SELECT id, name, email, user_type, roll_number, department, session FROM userss WHERE is_approved = FALSE"
+    # Get pending approvals
+    query = """
+        SELECT id, name, email, user_type, roll_number, department, session 
+        FROM userss 
+        WHERE is_approved = FALSE
+        ORDER BY created_at DESC
+    """
     pending_users = execute_query(query, fetch=True)
 
     return render_template('chairman_approvals.html', pending_users=pending_users)
 
-
-
-
 @app.route('/manually_mark_attendance', methods=['GET', 'POST'])
 def manually_mark_attendance():
-    # Check authentication
     if 'loggedin' not in session or session.get('user_type') != 'teacher':
+        flash("Unauthorized access.", "error")
         return redirect(url_for('login'))
-    
+
     teacher_email = session.get('email')
     
-    # Fetch teacher's name
-    teacher_data = execute_query(
-        "SELECT name FROM teacher WHERE email = %s", 
-        (teacher_email,), 
-        fetch=True
-    )
-    teacher_name = teacher_data[0]['name'] if teacher_data else teacher_email
+    # Get teacher name
+    query = "SELECT name FROM teacher WHERE email = %s"
+    teacher_result = execute_query(query, (teacher_email,), fetch=True)
+    if not teacher_result:
+        flash("Teacher information not found.", "error")
+        return redirect(url_for('login'))
+    teacher_name = teacher_result[0]['name']
 
     if request.method == 'POST':
         class_id = request.form.get('class_id')
         roll_number = request.form.get('roll_number').strip()
         status = request.form.get('status')
-        
-        # Get class details with teacher verification
-        class_info = execute_query("""
+
+        if not all([class_id, roll_number, status]):
+            flash("All fields are required.", "error")
+            return redirect(url_for('manually_mark_attendance'))
+
+        # Get class details and verify teacher is assigned to this course
+        query = """
             SELECT c.* FROM classes c
             JOIN teacher_course_assign tca ON 
                 c.course_code = tca.course_code AND
                 c.session = tca.session AND
                 c.semester = tca.semester
             WHERE c.id = %s AND tca.email = %s
-            LIMIT 1
-        """, (class_id, teacher_email), fetch=True)
-        
+        """
+        class_info = execute_query(query, (class_id, teacher_email), fetch=True)
         if not class_info:
-            flash("Invalid class or unauthorized access", "error")
+            flash("Invalid class or unauthorized access.", "error")
             return redirect(url_for('manually_mark_attendance'))
-        
         class_info = class_info[0]
-        
-        # Verify student enrollment and get username
-        student_data = execute_query("""
+
+        # Verify student is enrolled in this course
+        query = """
             SELECT s.name 
             FROM student_course_assign sca
             JOIN student s ON sca.roll_number = s.roll_number
@@ -1765,33 +1847,33 @@ def manually_mark_attendance():
               AND sca.course_code = %s 
               AND sca.session = %s 
               AND sca.semester = %s
-            LIMIT 1
-        """, (roll_number, class_info['course_code'], 
-             class_info['session'], class_info['semester']), fetch=True)
-        
-        if not student_data:
-            flash("Student not enrolled in this course", "error")
+        """
+        student_info = execute_query(query, (
+            roll_number, class_info['course_code'], 
+            class_info['session'], class_info['semester']
+        ), fetch=True)
+        if not student_info:
+            flash("Student not enrolled in this course.", "error")
             return redirect(url_for('manually_mark_attendance'))
-        
-        student_username = student_data[0]['name']
-        
-        # Calculate timein
+        student_name = student_info[0]['name']
+
+        # Calculate timein based on status
         timein = class_info['start_time']
         if status == 'Late':
+            # Add 15 minutes to start time for late students
             timein = (datetime.datetime.combine(datetime.date.today(), timein) + 
                      datetime.timedelta(minutes=15)).time()
-        
-        # Record attendance with student username
-        success = execute_query("""
+
+        # Insert attendance record
+        query = """
             INSERT INTO users_logs 
             (username, serialnumber, device_uid, checkindate, timein, timeout, fingerout)
             VALUES (%s, %s, %s, %s, %s, %s, %s)
-            ON DUPLICATE KEY UPDATE 
-            timein = VALUES(timein), 
-            timeout = VALUES(timeout),
-            fingerout = VALUES(fingerout)
-        """, (
-            student_username,  # Using actual student username instead of teacher note
+            ON CONFLICT (serialnumber, checkindate) 
+            DO UPDATE SET timein = EXCLUDED.timein, timeout = EXCLUDED.timeout, fingerout = EXCLUDED.fingerout
+        """
+        execute_query(query, (
+            student_name,
             roll_number,
             f"Manual by {teacher_name}",
             class_info['class_date'],
@@ -1799,17 +1881,15 @@ def manually_mark_attendance():
             class_info['end_time'],
             1  # fingerout
         ))
-        
-        if success:
-            flash(f"Marked {status}: {roll_number} ({student_username}) for {class_info['course_code']} on {class_info['class_date']}", "success")
-        else:
-            flash("Failed to record attendance", "error")
-    
+
+        flash(f"Attendance marked successfully for {student_name} ({roll_number}).", "success")
+        return redirect(url_for('manually_mark_attendance'))
+
     # Get teacher's classes
-    classes = execute_query("""
+    query = """
         SELECT c.id, c.course_code, c.class_date, 
-               DATE_FORMAT(c.start_time, '%H:%i') as formatted_start_time,
-               DATE_FORMAT(c.end_time, '%H:%i') as formatted_end_time,
+               TO_CHAR(c.start_time, 'HH24:MI') as formatted_start_time,
+               TO_CHAR(c.end_time, 'HH24:MI') as formatted_end_time,
                c.session, c.semester
         FROM classes c
         JOIN teacher_course_assign tca ON 
@@ -1817,15 +1897,14 @@ def manually_mark_attendance():
             c.session = tca.session AND
             c.semester = tca.semester
         WHERE tca.email = %s
-          AND c.class_date BETWEEN CURDATE() - INTERVAL 14 DAY AND CURDATE() + INTERVAL 14 DAY
+          AND c.class_date BETWEEN CURRENT_DATE - INTERVAL '14 days' AND CURRENT_DATE + INTERVAL '14 days'
         ORDER BY c.class_date DESC, c.start_time DESC
-    """, (teacher_email,), fetch=True)
-    
+    """
+    classes = execute_query(query, (teacher_email,), fetch=True)
+
     return render_template('manually_mark_attendance.html', 
                          classes=classes or [],
                          teacher_name=teacher_name)
-
-    
 
 if __name__ == '__main__':
     with app.app_context():
