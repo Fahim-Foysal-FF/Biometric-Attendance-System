@@ -210,11 +210,21 @@ class CourseFeedback(db.Model):
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-def execute_query(query, params=(), fetch=False):
+# Updated execute_query function to handle parameters properly
+def execute_query(query, params=None, fetch=False):
     try:
+        if params is None:
+            params = ()
+        elif not isinstance(params, (tuple, dict, list)):
+            params = (params,)  # Convert single value to tuple
+            
         result = db.session.execute(text(query), params)
+        
         if fetch:
-            return [dict(row) for row in result]
+            # Convert result to list of dictionaries
+            columns = [col.name for col in result.cursor.description]
+            return [dict(zip(columns, row)) for row in result]
+            
         db.session.commit()
         return True
     except Exception as e:
