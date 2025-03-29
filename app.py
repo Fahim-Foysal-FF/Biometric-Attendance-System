@@ -20,8 +20,7 @@ app.secret_key = os.environ.get('SECRET_KEY', secrets.token_hex(16))
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=1)
 
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get(
-    'postgresql://app1_4v6k_user:GyidmFDJG2hYgyxruZKyQCLFbTHO5c3U@dpg-cvk3h8gdl3ps73foe3lg-a/app1_4v6k', 
-    'mysql://root:@localhost/app1'  # Your MySQL credentials
+    'postgresql://app1_4v6k_user:GyidmFDJG2hYgyxruZKyQCLFbTHO5c3U@dpg-cvk3h8gdl3ps73foe3lg-a/app1_4v6k'
 )
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
