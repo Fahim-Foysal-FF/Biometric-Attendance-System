@@ -210,26 +210,31 @@ class CourseFeedback(db.Model):
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-# Updated execute_query function to handle parameters properly
 def execute_query(query, params=None, fetch=False):
     try:
+        # Convert params to proper format
         if params is None:
             params = ()
-        elif not isinstance(params, (tuple, dict, list)):
-            params = (params,)  # Convert single value to tuple
+        elif isinstance(params, list):
+            if not all(isinstance(x, (tuple, dict)) for x in params):
+                params = [tuple(x) if not isinstance(x, (tuple, dict)) else x for x in params]
+        elif not isinstance(params, (tuple, dict)):
+            params = (params,)
             
+        # Execute query
         result = db.session.execute(text(query), params)
         
+        # Handle results
         if fetch:
-            # Convert result to list of dictionaries
             columns = [col.name for col in result.cursor.description]
             return [dict(zip(columns, row)) for row in result]
             
         db.session.commit()
         return True
+        
     except Exception as e:
         db.session.rollback()
-        logging.error(f"Database error: {e}")
+        logging.error(f"Database error in query '{query}': {str(e)}")
         return False
 
 def get_db_connection():
