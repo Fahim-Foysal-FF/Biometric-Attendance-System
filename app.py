@@ -22,7 +22,7 @@ app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=1)
 
 
 # Get PostgreSQL URL from environment (no fallback)
-database_url = os.environ['postgresql://app1_4v6k_user:GyidmFDJG2hYgyxruZKyQCLFbTHO5c3U@dpg-cvk3h8gdl3ps73foe3lg-a/app1_4v6k']  # Will raise error if not set
+database_url = os.environ['DATABASE_URL']  # Will raise error if not set
 
 # Fix URL format for SQLAlchemy
 if database_url.startswith('postgres://'):
