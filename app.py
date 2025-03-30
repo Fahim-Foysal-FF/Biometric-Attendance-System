@@ -896,7 +896,7 @@ def view_attendance():
                                     EXTRACT(EPOCH FROM (
                                         LEAST(c.end_time, GREATEST(c.start_time, u.timeout)) - 
                                         GREATEST(c.start_time, LEAST(c.end_time, u.timein))
-                                    )) / 60
+                                    ) / 60
                                 ELSE 0
                             END
                         ) AS total_minutes_present,
@@ -907,7 +907,7 @@ def view_attendance():
                     JOIN 
                         classes c ON sca.course_code = c.course_code 
                     LEFT JOIN 
-                        users_logs u ON sca.roll_number = u.serialnumber AND DATE(u.checkindate) = c.class_date
+                        users_logs u ON sca.roll_number::text = u.serialnumber::text AND DATE(u.checkindate) = c.class_date
                     WHERE 
                         sca.session = %s 
                         AND sca.semester = %s
