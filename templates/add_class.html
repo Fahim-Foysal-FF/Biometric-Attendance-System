@@ -142,14 +142,7 @@
                         <span>Notice Board</span></a>
                 </li>
             </ul>
-            <ul class="Special">
-                <li>
-                    <a href="{{ url_for('logout') }}">
-                        <span><i class="fa fa-sign-out"></i></span>
-                        <span>Log Out</span>
-                    </a>
-                </li>
-            </ul>
+            
         </div>
     </div>
 
@@ -169,9 +162,12 @@
             </div>
 
             <div class="icon">
-                <ul>
+                <ul class="Special">
                     <li>
-                        <a href="Edit.html"><i class="fa fa-user"></i></a>
+                        <a href="{{ url_for('logout') }}">
+                            <span><i class="fa fa-sign-out"></i></span>
+                            <span>Log Out</span>
+                        </a>
                     </li>
                 </ul>
             </div>

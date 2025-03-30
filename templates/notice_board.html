@@ -343,30 +343,28 @@
                             </tr>
                         </thead>
                         <tbody>
-                            {% for notice in notices %}
-                            <tr>
-                                <td>{{ notice[0] }}</td>
-                                <td>{{ notice[2] }}</td>
-                                <td>{{ notice[3] }}</td>
-                                <td>{{ notice[1] }}</td>
-                                <td>
-                                    {% if notice[4] %}
-                                    <a href="{{ notice[4] }}" target="_blank">Download</a>
-                                    {% else %}
-                                    No file uploaded
-                                    {% endif %}
-                                </td>
-                            </tr>
-                            {% endfor %}
+                            {% if notices %}
+                                {% for notice in notices %}
+                                    <tr>
+                                        <td>{{ notice.title }}</td>
+                                        <td>{{ notice.posted_by if notice.posted_by else 'Unknown' }}</td>
+                                        <td>{{ notice.date }}</td>
+                                        <td>{{ notice.content }}</td>
+                                        <td>
+                                            {% if notice.file_url %}
+                                                <a href="{{ notice.file_url }}" target="_blank">Download</a>
+                                            {% else %}
+                                                No file uploaded
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="5">No notices available.</td>
+                                </tr>
+                            {% endif %}
                         </tbody>
-                    </table>
-                    
-                    {% else %}
-                    <div class="no-notices">
-                        No notices available.
-                    </div>
-                    {% endif %}
-                </div>
             </body>
         </main>
         </html>
