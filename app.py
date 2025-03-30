@@ -212,37 +212,37 @@ def allowed_file(filename):
 
 def execute_query(query, params=None, fetch=False):
     try:
-        # Convert params to proper format
+        # Ensure params is a tuple or dict, handle None case
         if params is None:
-            params = ()
-        elif isinstance(params, (list, tuple)):
-            # Ensure all elements are properly formatted
-            if len(params) == 1 and not isinstance(params[0], (tuple, dict)):
-                params = (params[0],)  # Single value in a tuple
-            elif not all(isinstance(x, (tuple, dict)) for x in params):
-                params = tuple(params)  # Convert list to tuple
-        elif not isinstance(params, (tuple, dict)):
-            params = (params,)  # Single value to tuple
-            
+            params = ()  # Empty tuple for no parameters
+        elif isinstance(params, dict):
+            pass  # Leave dictionaries as-is
+        elif not isinstance(params, tuple):
+            params = (params,)  # Convert single value to tuple
+        # If params is already a tuple, no further conversion needed
+
         # Debug logging (remove in production)
         logging.debug(f"Executing query: {query}")
         logging.debug(f"With parameters: {params}")
-        
-        # Execute query
+
+        # Execute query with proper parameter passing
         result = db.session.execute(text(query), params)
-        
+
         # Handle results
         if fetch:
+            # Fetch all rows and convert to list of dictionaries
             columns = [col.name for col in result.cursor.description]
-            return [dict(zip(columns, row)) for row in result]
-            
+            return [dict(zip(columns, row)) for row in result.fetchall()]
+
+        # Commit changes for non-fetch queries
         db.session.commit()
         return True
-        
+
     except Exception as e:
         db.session.rollback()
         logging.error(f"Database error in query '{query}' with params {params}: {str(e)}")
         return False
+    
 
 def get_db_connection():
     conn = psycopg2.connect(os.environ['DATABASE_URL'])
