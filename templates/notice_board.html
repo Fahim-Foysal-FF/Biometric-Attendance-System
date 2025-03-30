@@ -316,8 +316,10 @@
         <main>
             
         <body>
-            <h1>Notice Board</h1>
-            <h3>Welcome, {{ user_type }}</h3>
+            <div><h1>Notice Board</h1>
+                <h3>Welcome, {{ user_type }}</h3>
+            </div>
+            
 
             {% if error %}
                 <p style="color: red;">{{ error }}</p>
