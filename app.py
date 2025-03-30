@@ -867,84 +867,83 @@ def view_attendance():
 
         try:
             query = """
-                WITH class_counts AS (
-                    SELECT 
-                        course_code,
-                        COUNT(*) AS total_classes
-                    FROM 
-                        classes
-                    WHERE 
-                        session = %s 
-                        AND semester = %s
-                        AND course_code = %s
-                    GROUP BY 
-                        course_code
-                ),
-                student_attendance AS (
-                    SELECT 
-                        sca.roll_number,
-                        c.course_code,
-                        c.class_date,
-                        c.start_time,
-                        c.end_time,
-                        u.timein,
-                        u.timeout,
-                        -- Calculate total time the student was present
-                        SUM(
-                            CASE 
-                                WHEN u.timein IS NOT NULL AND u.timeout IS NOT NULL THEN
+                        WITH class_counts AS (
+                            SELECT 
+                                course_code,
+                                COUNT(*) AS total_classes
+                            FROM 
+                                classes
+                            WHERE 
+                                session = %s 
+                                AND semester = %s
+                                AND course_code = %s
+                            GROUP BY 
+                                course_code
+                        ),
+                        student_attendance AS (
+                            SELECT 
+                                sca.roll_number,
+                                c.course_code,
+                                c.class_date,
+                                c.start_time,
+                                c.end_time,
+                                u.timein,
+                                u.timeout,
+                                SUM(
                                     EXTRACT(EPOCH FROM (
-                                        LEAST(c.end_time, GREATEST(c.start_time, u.timeout)) - 
-                                        GREATEST(c.start_time, LEAST(c.end_time, u.timein))
-                                    ) / 60
-                                ELSE 0
-                            END
-                        ) AS total_minutes_present,
-                        -- Calculate total duration of the class
-                        EXTRACT(EPOCH FROM (c.end_time - c.start_time)) / 60 AS total_class_duration
-                    FROM 
-                        student_course_assign sca
-                    JOIN 
-                        classes c ON sca.course_code = c.course_code 
-                    LEFT JOIN 
-                        users_logs u ON sca.roll_number::text = u.serialnumber::text AND DATE(u.checkindate) = c.class_date
-                    WHERE 
-                        sca.session = %s 
-                        AND sca.semester = %s
-                        AND sca.course_code = %s
-                    GROUP BY 
-                        sca.roll_number, c.course_code, c.class_date, c.start_time, c.end_time, u.timein, u.timeout
-                ),
-                attended_classes AS (
-                    SELECT 
-                        roll_number,
-                        course_code,
-                        COUNT(CASE 
-                            WHEN total_minutes_present >= (total_class_duration * 0.5) THEN 1
-                        END) AS attended_classes
-                    FROM 
-                        student_attendance
-                    GROUP BY 
-                        roll_number, course_code
-                )
-                SELECT 
-                    ac.roll_number,
-                    ac.course_code,
-                    COALESCE(cc.total_classes, 0) AS total_classes,
-                    COALESCE(ac.attended_classes, 0) AS attended_classes,
-                    CASE 
-                        WHEN cc.total_classes > 0 THEN ROUND((ac.attended_classes * 100.0 / cc.total_classes), 2)
-                        ELSE 0 
-                    END AS attendance_percentage
-                FROM 
-                    attended_classes ac
-                JOIN 
-                    class_counts cc ON ac.course_code = cc.course_code
-                WHERE
-                    ac.course_code = %s
-                ORDER BY 
-                    ac.roll_number;
-            """
+                                        CASE 
+                                            WHEN u.timein IS NOT NULL AND u.timeout IS NOT NULL THEN
+                                                LEAST(c.end_time, GREATEST(c.start_time, u.timeout)) - 
+                                                GREATEST(c.start_time, LEAST(c.end_time, u.timein))
+                                            ELSE 
+                                                INTERVAL '0 minutes'
+                                        END
+                                    )) / 60
+                                ) AS total_minutes_present,
+                                EXTRACT(EPOCH FROM (c.end_time - c.start_time)) / 60 AS total_class_duration
+                            FROM 
+                                student_course_assign sca
+                            JOIN 
+                                classes c ON sca.course_code = c.course_code 
+                            LEFT JOIN 
+                                users_logs u ON sca.roll_number::text = u.serialnumber::text AND DATE(u.checkindate) = c.class_date
+                            WHERE 
+                                sca.session = %s 
+                                AND sca.semester = %s
+                                AND sca.course_code = %s
+                            GROUP BY 
+                                sca.roll_number, c.course_code, c.class_date, c.start_time, c.end_time, u.timein, u.timeout
+                        ),
+                        attended_classes AS (
+                            SELECT 
+                                roll_number,
+                                course_code,
+                                COUNT(CASE 
+                                    WHEN total_minutes_present >= (total_class_duration * 0.5) THEN 1
+                                END) AS attended_classes
+                            FROM 
+                                student_attendance
+                            GROUP BY 
+                                roll_number, course_code
+                        )
+                        SELECT 
+                            ac.roll_number,
+                            ac.course_code,
+                            COALESCE(cc.total_classes, 0) AS total_classes,
+                            COALESCE(ac.attended_classes, 0) AS attended_classes,
+                            CASE 
+                                WHEN cc.total_classes > 0 THEN ROUND((ac.attended_classes * 100.0 / cc.total_classes), 2)
+                                ELSE 0 
+                            END AS attendance_percentage
+                        FROM 
+                            attended_classes ac
+                        JOIN 
+                            class_counts cc ON ac.course_code = cc.course_code
+                        WHERE
+                            ac.course_code = %s
+                        ORDER BY 
+                            ac.roll_number;
+                    """
 
             attendance_data = execute_query(query, (
                 selected_session, semester, course_code,
