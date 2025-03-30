@@ -38,7 +38,7 @@ mail = Mail(app)
 
 # File upload configuration
 UPLOAD_FOLDER = 'static/uploads'
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'pdf'}
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
@@ -67,6 +67,7 @@ class User(db.Model):
     present_address = db.Column(db.Text)
     permanent_address = db.Column(db.Text)
     dob = db.Column(db.Date)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 class Student(db.Model):
     __tablename__ = 'student'
