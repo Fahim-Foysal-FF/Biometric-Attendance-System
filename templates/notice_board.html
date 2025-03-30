@@ -314,50 +314,59 @@
             </div>
         </header>
         <main>
+            <body>
+                <div class="container">
+                    <div class="header">
+                        <h1>Notice Board</h1>
+                        {% if user_type %}
+                        <p>Welcome, {{ user_type|capitalize }}</p>
+                        {% endif %}
+                    </div>
             
-        <body>
-            <div><h1>Notice Board</h1>
-                <h3>Welcome, {{ user_type }}</h3>
-            </div>
+                    <!-- Display error message if any -->
+                    {% if error %}
+                    <div class="error-message">
+                        {{ error }}
+                    </div>
+                    {% endif %}
             
-
-            {% if error %}
-                <p style="color: red;">{{ error }}</p>
-            {% endif %}
-
-            <table border="1">
-                <thead>
-                    <tr>
-                        <th>Title</th>
-                        <th>Posted By</th>
-                        <th>Date</th>
-                        <th>Content</th>
-                        <th>File</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% if notices %}
-                        {% for notice in notices %}
+                    <!-- Display notices -->
+                    {% if notices and notices|length > 0 %}
+                    <table id="noticeTable">
+                        <thead>
                             <tr>
-                                <td>{{ notice.title }}</td>
-                                <td>{{ notice.posted_by if notice.posted_by else 'Unknown' }}</td>
-                                <td>{{ notice.date }}</td>
-                                <td>{{ notice.content }}</td>
+                                <th>Title</th>
+                                <th>Posted By</th>
+                                <th>Date</th>
+                                <th>Content</th>
+                                <th>File</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for notice in notices %}
+                            <tr>
+                                <td>{{ notice[0] }}</td>
+                                <td>{{ notice[2] }}</td>
+                                <td>{{ notice[3] }}</td>
+                                <td>{{ notice[1] }}</td>
                                 <td>
-                                    {% if notice.file_url %}
-                                        <a href="{{ notice.file_url }}" target="_blank">Download</a>
+                                    {% if notice[4] %}
+                                    <a href="{{ notice[4] }}" target="_blank">Download</a>
                                     {% else %}
-                                        No file uploaded
+                                    No file uploaded
                                     {% endif %}
                                 </td>
                             </tr>
-                        {% endfor %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    
                     {% else %}
-                        <tr>
-                            <td colspan="5">No notices available.</td>
-                        </tr>
+                    <div class="no-notices">
+                        No notices available.
+                    </div>
                     {% endif %}
-                </tbody>
-            </table>
-        </body>
+                </div>
+            </body>
+        </main>
         </html>
