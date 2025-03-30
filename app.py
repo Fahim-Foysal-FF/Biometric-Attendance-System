@@ -212,35 +212,44 @@ def allowed_file(filename):
 
 def execute_query(query, params=None, fetch=False):
     try:
-        # Ensure params is a tuple or dict, handle None case
+        # Handle params as a dictionary for SQLAlchemy compatibility
         if params is None:
-            params = ()  # Empty tuple for no parameters
+            param_dict = {}
         elif isinstance(params, dict):
-            pass  # Leave dictionaries as-is
-        elif not isinstance(params, tuple):
-            params = (params,)  # Convert single value to tuple
-        # If params is already a tuple, no further conversion needed
+            param_dict = params
+        elif isinstance(params, tuple):
+            # Convert tuple to dictionary with numbered placeholders
+            param_dict = {str(i + 1): val for i, val in enumerate(params)}
+            # Adjust query to use :1, :2, etc. placeholders
+            query = query.replace('%s', ':%d').replace(':%d', ':{}')
+            query = query.format(*[i + 1 for i in range(len(params))])
+        else:
+            param_dict = {'1': params}  # Single value case
+            query = query.replace('%s', ':1')
 
-        # Debug logging (remove in production)
+        # Debug logging
         logging.debug(f"Executing query: {query}")
-        logging.debug(f"With parameters: {params}")
+        logging.debug(f"With parameters: {param_dict}")
 
-        # Execute query with proper parameter passing
-        result = db.session.execute(text(query), params)
+        # Execute query
+        if param_dict:
+            result = db.session.execute(text(query), param_dict)
+        else:
+            result = db.session.execute(text(query))
 
         # Handle results
         if fetch:
-            # Fetch all rows and convert to list of dictionaries
             columns = [col.name for col in result.cursor.description]
-            return [dict(zip(columns, row)) for row in result.fetchall()]
+            rows = result.fetchall()
+            return [dict(zip(columns, row)) for row in rows] if rows else []
 
-        # Commit changes for non-fetch queries
         db.session.commit()
         return True
 
     except Exception as e:
         db.session.rollback()
-        logging.error(f"Database error in query '{query}' with params {params}: {str(e)}")
+        logging.error(f"Database error in query '{query}' with params {param_dict}: {str(e)}")
+        raise  # Raise exception for debugging on Render
         return False
     
 
