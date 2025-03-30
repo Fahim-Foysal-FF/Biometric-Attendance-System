@@ -896,7 +896,7 @@ def view_attendance():
                                     EXTRACT(EPOCH FROM (
                                         LEAST(c.end_time, GREATEST(c.start_time, u.timeout)) - 
                                         GREATEST(c.start_time, LEAST(c.end_time, u.timein))
-                                    ) / 60
+                                    )) / 60
                                 ELSE 0
                             END
                         ) AS total_minutes_present,
@@ -913,14 +913,14 @@ def view_attendance():
                         AND sca.semester = %s
                         AND sca.course_code = %s
                     GROUP BY 
-                        sca.roll_number, c.course_code, c.class_date
+                        sca.roll_number, c.course_code, c.class_date, c.start_time, c.end_time, u.timein, u.timeout
                 ),
                 attended_classes AS (
                     SELECT 
                         roll_number,
                         course_code,
                         COUNT(CASE 
-                            WHEN total_minutes_present >= (total_class_duration * 0.5) THEN 1  -- Adjust threshold as needed
+                            WHEN total_minutes_present >= (total_class_duration * 0.5) THEN 1
                         END) AS attended_classes
                     FROM 
                         student_attendance
@@ -941,7 +941,9 @@ def view_attendance():
                 JOIN 
                     class_counts cc ON ac.course_code = cc.course_code
                 WHERE
-                    ac.course_code = %s;
+                    ac.course_code = %s
+                ORDER BY 
+                    ac.roll_number;
             """
 
             attendance_data = execute_query(query, (
@@ -957,7 +959,10 @@ def view_attendance():
             print(f"Database Error: {str(e)}")
             flash(f"An error occurred while fetching attendance data: {str(e)}", "error")
 
-    return render_template('view_attendance.html', attendance_data=attendance_data, user_type=user_type)
+    return render_template('view_attendance.html', 
+                         attendance_data=attendance_data, 
+                         user_type=user_type,
+                         session=session)
 
 @app.route('/change_password', methods=['GET', 'POST'])
 def change_password():
