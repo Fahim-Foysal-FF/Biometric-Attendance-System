@@ -323,16 +323,7 @@
                         {% endif %}
                     </div>
             
-                    <!-- Display error message if any -->
-                    {% if error %}
-                    <div class="error-message">
-                        {{ error }}
-                    </div>
-                    {% endif %}
-            
-                    <!-- Display notices -->
-                    {% if notices and notices|length > 0 %}
-                    <table id="noticeTable">
+                    <table border="1">
                         <thead>
                             <tr>
                                 <th>Title</th>
@@ -365,6 +356,7 @@
                                 </tr>
                             {% endif %}
                         </tbody>
-            </body>
-        </main>
-        </html>
+                    </table>
+                </body>
+                </html>
+                    
