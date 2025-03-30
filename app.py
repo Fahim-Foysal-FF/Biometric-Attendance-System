@@ -1292,21 +1292,59 @@ def add_notice():
 @app.route('/notice_board', methods=['GET'])
 def notice_board():
     try:
+        # First verify the tables exist
+        table_check = """
+            SELECT EXISTS (
+                SELECT FROM information_schema.tables 
+                WHERE table_name = 'notices'
+            ) AS notices_exist,
+            EXISTS (
+                SELECT FROM information_schema.tables
+                WHERE table_name = 'userss'
+            ) AS users_exist
+        """
+        tables_exist = execute_query(table_check, fetch=True)
+        
+        if not tables_exist or not tables_exist[0]['notices_exist'] or not tables_exist[0]['users_exist']:
+            raise Exception("Required database tables are missing")
+
+        # Modified query with explicit column selection and better joins
         query = """
-            SELECT n.title, n.content, u.name as posted_by, n.date, n.file_url 
+            SELECT 
+                n.id,
+                n.title, 
+                n.content, 
+                COALESCE(u.name, 'System') as posted_by, 
+                TO_CHAR(n.date, 'YYYY-MM-DD HH24:MI') as formatted_date,
+                n.file_url
             FROM notices n
-            JOIN userss u ON n.posted_by = u.email
+            LEFT JOIN userss u ON n.posted_by = u.email
             ORDER BY n.date DESC
+            LIMIT 50
         """
         notices = execute_query(query, fetch=True)
-        error = None
+        
+        # Debug output
+        app.logger.debug(f"Retrieved notices: {notices}")
+        
+        if not notices:
+            app.logger.warning("No notices found in database")
+            return render_template('notice_board.html', 
+                                notices=[], 
+                                error="No notices available",
+                                user_type=session.get('user_type', 'Guest'))
+        
+        return render_template('notice_board.html', 
+                            notices=notices, 
+                            error=None,
+                            user_type=session.get('user_type', 'Guest'))
+        
     except Exception as e:
-        print(f"Error fetching notices: {e}")
-        notices = []
-        error = "Failed to load notices. Please try again later."
-
-    user_type = session.get('user_type', 'Guest')
-    return render_template('notice_board.html', notices=notices, error=error, user_type=user_type)
+        app.logger.error(f"Error loading notices: {str(e)}")
+        return render_template('notice_board.html',
+                            notices=[],
+                            error="Failed to load notices. Please try again later.",
+                            user_type=session.get('user_type', 'Guest'))
 
 @app.route('/student_course_assign', methods=['GET', 'POST'])
 def student_course_assign():
