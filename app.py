@@ -1969,7 +1969,7 @@ def manually_mark_attendance():
                 timein = (datetime.datetime.combine(datetime.date.today(), timein) + 
                          datetime.timedelta(minutes=15)).time()
 
-            # Insert attendance record
+            # Insert attendance record with boolean value for fingerout
             query = """
                 INSERT INTO users_logs 
                 (username, serialnumber, device_uid, checkindate, timein, timeout, fingerout)
@@ -1984,7 +1984,7 @@ def manually_mark_attendance():
                 class_info['class_date'],
                 timein,
                 class_info['end_time'],
-                1  # fingerout
+                True  # Changed to boolean value
             ))
             success_count += 1
 

@@ -5,105 +5,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
     <link rel="stylesheet" href="{{ url_for('static', filename='form_style.css') }}">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css"
-        integrity="sha512-Kc323vGBEqzTmouAECnVceyQqyqdsSiqLQISBL29aUW4U/M7pSPA/gEUZQqv1cwx4OnYxTxve5UMg5GT6L4JJg=="
-        crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
     <title>Manage Attendance</title>
     <style>
-        body {
-            margin: 0;
-            padding: 0;
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f9;
-        }
-
-        .form-container {
-            max-width: 1000px;
-            margin: 100px auto;
-            background: white;
-            padding: 60px;
-            border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        }
-
-        .form-header {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-
-        .form-row {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-
-        .form-group {
-            flex: 1;
-            min-width: 200px;
-        }
-
-        .form-group label {
-            font-weight: bold;
-            display: block;
-            margin-bottom: 5px;
-        }
-
-        .form-group select,
-        .form-group input {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            font-size: 16px;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
-
-        table th, table td {
-            padding: 10px;
-            border: 1px solid #ddd;
-            text-align: center;
-        }
-
-        table th {
-            background-color: #f4f4f4;
-        }
-
-        .form-submit {
-            text-align: center;
-            margin-top: 20px;
-        }
-
-        .form-submit button {
-            padding: 10px 20px;
-            font-size: 16px;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-
-        .form-submit button:hover {
-            background-color: #45a049;
-        }
         :root {
             --primary: #3498db;
             --success: #2ecc71;
-            --warning: #f39c12;
             --danger: #e74c3c;
             --light: #ecf0f1;
             --dark: #2c3e50;
         }
-        body {
-            font-family: 'Segoe UI', system-ui, sans-serif;
-            background-color: #f8f9fa;
-        }
+        
         .attendance-container {
             max-width: 1200px;
             margin: 120px auto;
@@ -112,6 +24,7 @@
             box-shadow: 0 0 20px rgba(0,0,0,0.1);
             padding: 40px;
         }
+        
         .teacher-header {
             display: flex;
             justify-content: space-between;
@@ -120,6 +33,7 @@
             padding-bottom: 15px;
             border-bottom: 1px solid #eee;
         }
+        
         .teacher-badge {
             background-color: var(--primary);
             color: white;
@@ -127,35 +41,37 @@
             border-radius: 20px;
             font-weight: 500;
         }
+        
         .form-label {
             font-weight: 600;
             color: var(--dark);
             margin-bottom: 8px;
         }
+        
         .status-btn {
-            padding: 10px 20px;
+            padding: 8px 16px;
             border: none;
             border-radius: 5px;
             font-weight: 600;
             transition: all 0.2s;
-            margin-right: 10px;
+            cursor: pointer;
         }
+        
         .present-btn {
             background-color: var(--success);
             color: white;
         }
-        .late-btn {
-            background-color: var(--warning);
-            color: white;
-        }
+        
         .absent-btn {
             background-color: var(--danger);
             color: white;
         }
+        
         .status-btn.active {
             transform: translateY(-2px);
             box-shadow: 0 4px 10px rgba(0,0,0,0.1);
         }
+        
         .submit-btn {
             background-color: var(--primary);
             color: white;
@@ -164,40 +80,18 @@
             border: none;
             border-radius: 5px;
             transition: background 0.3s;
+            cursor: pointer;
+            margin-top: 20px;
         }
+        
         .submit-btn:hover {
             background-color: #2980b9;
         }
-        .class-option {
-            display: flex;
-            justify-content: space-between;
-        }
-        .class-code {
-            font-weight: 600;
-            color: var(--dark);
-        }
-        .class-details {
-            color: #7f8c8d;
-            font-size: 0.9em;
-        }
-        .flash-message {
-            padding: 15px;
-            margin-bottom: 25px;
-            border-radius: 5px;
-        }
-        .flash-success {
-            background-color: #d5f5e3;
-            color: #27ae60;
-            border: 1px solid #2ecc71;
-        }
-        .flash-error {
-            background-color: #fadbd8;
-            color: #e74c3c;
-            border: 1px solid #e74c3c;
-        }
+        
         .student-list {
             margin-top: 30px;
         }
+        
         .student-card {
             display: flex;
             justify-content: space-between;
@@ -208,35 +102,43 @@
             margin-bottom: 10px;
             background-color: #fff;
         }
+        
         .student-info {
             flex: 1;
         }
+        
         .student-actions {
             display: flex;
             gap: 10px;
         }
+        
         .no-students {
             text-align: center;
             padding: 20px;
             color: #7f8c8d;
             font-style: italic;
         }
+        
         @media (max-width: 768px) {
             .attendance-container {
                 padding: 20px;
                 margin: 15px;
             }
+            
             .teacher-header {
                 flex-direction: column;
                 align-items: flex-start;
             }
+            
             .teacher-badge {
                 margin-top: 10px;
             }
+            
             .student-card {
                 flex-direction: column;
                 align-items: flex-start;
             }
+            
             .student-actions {
                 margin-top: 10px;
                 width: 100%;
@@ -293,7 +195,6 @@
                         <span>Notice Board</span></a>
                 </li>
             </ul>
-            
         </div>
     </div>
 
@@ -372,16 +273,16 @@
                         </div>
                         <div class="student-actions">
                             <input type="hidden" name="roll_numbers" value="{{ student.roll_number }}">
-                            <select name="status_{{ student.roll_number }}" class="status-select">
-                                <option value="Present" selected>Present</option>
-                                <option value="Late">Late</option>
-                                <option value="Absent">Absent</option>
-                            </select>
+                            <button type="button" class="status-btn present-btn" 
+                                    onclick="setStatus(this, '{{ student.roll_number }}', 'Present')">Present</button>
+                            <button type="button" class="status-btn absent-btn" 
+                                    onclick="setStatus(this, '{{ student.roll_number }}', 'Absent')">Absent</button>
+                            <input type="hidden" id="status_{{ student.roll_number }}" name="status_{{ student.roll_number }}" value="Present">
                         </div>
                     </div>
                     {% endfor %}
                     
-                    <div class="form-submit" style="margin-top: 20px;">
+                    <div class="form-submit">
                         <button type="submit" class="submit-btn">Submit Attendance</button>
                     </div>
                 </form>
@@ -400,11 +301,31 @@
             document.getElementById('classSelectionForm').submit();
         });
 
+        // Set attendance status for a student
+        function setStatus(button, rollNumber, status) {
+            // Remove active class from all buttons for this student
+            const card = button.closest('.student-card');
+            card.querySelectorAll('.status-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Add active class to clicked button
+            button.classList.add('active');
+            
+            // Update the hidden input value
+            document.getElementById(`status_${rollNumber}`).value = status;
+        }
+
         // Confirm before submitting attendance
         document.getElementById('attendanceForm')?.addEventListener('submit', function(e) {
             if (!confirm('Are you sure you want to submit these attendance records?')) {
                 e.preventDefault();
             }
+        });
+
+        // Initialize present buttons as active by default
+        document.querySelectorAll('.present-btn').forEach(btn => {
+            btn.classList.add('active');
         });
     </script>
     
