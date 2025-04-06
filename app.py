@@ -1982,6 +1982,7 @@ def manually_mark_attendance():
                     UPDATE users_logs 
                     SET username = %s,
                         device_uid = %s,
+                        device_dep = %s,  -- Added device_dep
                         timein = %s,
                         timeout = %s,
                         fingerout = %s
@@ -1990,6 +1991,7 @@ def manually_mark_attendance():
                 execute_query(query, (
                     student_name,
                     f"Manual by {teacher_name}",
+                    'Manual',  # Placeholder for device_dep; adjust as needed
                     timein,
                     class_info['end_time'],
                     True,
@@ -1997,17 +1999,18 @@ def manually_mark_attendance():
                     class_info['class_date']
                 ))
             else:
-                # Insert new record with correct columns
+                # Insert new record with all required columns
                 query = """
                     INSERT INTO users_logs 
-                    (username, serialnumber, fingerprint_id, device_uid, checkindate, timein, timeout, fingerout)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                    (username, serialnumber, fingerprint_id, device_uid, device_dep, checkindate, timein, timeout, fingerout)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """
                 execute_query(query, (
                     student_name,
                     roll_number,
                     roll_number,  # Using roll_number as fingerprint_id
                     f"Manual by {teacher_name}",
+                    'Manual',  # Placeholder for device_dep; adjust as needed
                     class_info['class_date'],
                     timein,
                     class_info['end_time'],
