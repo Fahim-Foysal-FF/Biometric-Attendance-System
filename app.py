@@ -1997,22 +1997,25 @@ def manually_mark_attendance():
                     class_info['class_date']
                 ))
             else:
-                # Insert new record
+                # Insert new record with all required columns
                 query = """
                     INSERT INTO users_logs 
-                    (username, serialnumber, device_uid, checkindate, timein, timeout, fingerout)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s)
+                    (username, serialnumber, fingerprint_id, device_uid, device_id, checkindate, timein, timeout, fingerout)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """
                 execute_query(query, (
                     student_name,
                     roll_number,
+                    roll_number,  # Using roll_number as fingerprint_id
                     f"Manual by {teacher_name}",
+                    "Manual",    # Default device_id
                     class_info['class_date'],
                     timein,
                     class_info['end_time'],
                     True
                 ))
             success_count += 1
+
 
         flash(f"Attendance marked successfully for {success_count} students.", "success")
         return redirect(url_for('manually_mark_attendance', class_id=class_id))
