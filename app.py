@@ -1240,6 +1240,7 @@ def get_students():
     SELECT roll_number AS id 
     FROM student_course_assign
     WHERE session = %s AND semester = %s AND course_code = %s
+    ORDER BY roll_number ASC
     """
 
     try:
