@@ -277,7 +277,7 @@
                                     onclick="setStatus(this, '{{ student.roll_number }}', 'Present')">Present</button>
                             <button type="button" class="status-btn absent-btn" 
                                     onclick="setStatus(this, '{{ student.roll_number }}', 'Absent')">Absent</button>
-                            <input type="hidden" id="status_{{ student.roll_number }}" name="status_{{ student.roll_number }}" value="Present">
+                            <input type="hidden" id="status_{{ student.roll_number }}" name="status_{{ student.roll_number }}" value="Absent">
                         </div>
                     </div>
                     {% endfor %}
@@ -323,8 +323,8 @@
             }
         });
 
-        // Initialize present buttons as active by default
-        document.querySelectorAll('.present-btn').forEach(btn => {
+        // Initialize absent buttons as active by default
+        document.querySelectorAll('.absent-btn').forEach(btn => {
             btn.classList.add('active');
         });
     </script>

@@ -1969,23 +1969,49 @@ def manually_mark_attendance():
                 timein = (datetime.datetime.combine(datetime.date.today(), timein) + 
                          datetime.timedelta(minutes=15)).time()
 
-            # Insert attendance record with boolean value for fingerout
+            # Check if record exists
             query = """
-                INSERT INTO users_logs 
-                (username, serialnumber, device_uid, checkindate, timein, timeout, fingerout)
-                VALUES (%s, %s, %s, %s, %s, %s, %s)
-                ON CONFLICT (serialnumber, checkindate) 
-                DO UPDATE SET timein = EXCLUDED.timein, timeout = EXCLUDED.timeout, fingerout = EXCLUDED.fingerout
+                SELECT 1 FROM users_logs 
+                WHERE serialnumber = %s AND checkindate = %s
             """
-            execute_query(query, (
-                student_name,
-                roll_number,
-                f"Manual by {teacher_name}",
-                class_info['class_date'],
-                timein,
-                class_info['end_time'],
-                True  # Changed to boolean value
-            ))
+            existing = execute_query(query, (roll_number, class_info['class_date']), fetch=True)
+
+            if existing:
+                # Update existing record
+                query = """
+                    UPDATE users_logs 
+                    SET username = %s,
+                        device_uid = %s,
+                        timein = %s,
+                        timeout = %s,
+                        fingerout = %s
+                    WHERE serialnumber = %s AND checkindate = %s
+                """
+                execute_query(query, (
+                    student_name,
+                    f"Manual by {teacher_name}",
+                    timein,
+                    class_info['end_time'],
+                    True,
+                    roll_number,
+                    class_info['class_date']
+                ))
+            else:
+                # Insert new record
+                query = """
+                    INSERT INTO users_logs 
+                    (username, serialnumber, device_uid, checkindate, timein, timeout, fingerout)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s)
+                """
+                execute_query(query, (
+                    student_name,
+                    roll_number,
+                    f"Manual by {teacher_name}",
+                    class_info['class_date'],
+                    timein,
+                    class_info['end_time'],
+                    True
+                ))
             success_count += 1
 
         flash(f"Attendance marked successfully for {success_count} students.", "success")
