@@ -14,6 +14,7 @@
             --danger: #e74c3c;
             --light: #ecf0f1;
             --dark: #2c3e50;
+            --inactive: #ffffff; /* White for inactive buttons */
         }
         
         .attendance-container {
@@ -50,19 +51,21 @@
         
         .status-btn {
             padding: 8px 16px;
-            border: none;
+            border: 1px solid #ccc; /* Add a border for visibility when white */
             border-radius: 5px;
             font-weight: 600;
             transition: all 0.2s;
             cursor: pointer;
+            background-color: var(--inactive); /* Default to white */
+            color: var(--dark); /* Dark text when inactive */
         }
         
-        .present-btn {
+        .present-btn.active {
             background-color: var(--success);
             color: white;
         }
         
-        .absent-btn {
+        .absent-btn.active {
             background-color: var(--danger);
             color: white;
         }
@@ -303,16 +306,15 @@
 
         // Set attendance status for a student
         function setStatus(button, rollNumber, status) {
-            // Remove active class from all buttons for this student
             const card = button.closest('.student-card');
-            card.querySelectorAll('.status-btn').forEach(btn => {
-                btn.classList.remove('active');
-            });
+            const presentBtn = card.querySelector('.present-btn');
+            const absentBtn = card.querySelector('.absent-btn');
             
-            // Add active class to clicked button
+            presentBtn.classList.remove('active');
+            absentBtn.classList.remove('active');
+            
             button.classList.add('active');
             
-            // Update the hidden input value
             document.getElementById(`status_${rollNumber}`).value = status;
         }
 
