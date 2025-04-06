@@ -1852,77 +1852,6 @@ def manually_mark_attendance():
         return redirect(url_for('login'))
     teacher_name = teacher_result[0]['name']
 
-    if request.method == 'POST':
-        class_id = request.form.get('class_id')
-        roll_number = request.form.get('roll_number').strip()
-        status = request.form.get('status')
-
-        if not all([class_id, roll_number, status]):
-            flash("All fields are required.", "error")
-            return redirect(url_for('manually_mark_attendance'))
-
-        # Get class details and verify teacher is assigned to this course
-        query = """
-            SELECT c.* FROM classes c
-            JOIN teacher_course_assign tca ON 
-                c.course_code = tca.course_code AND
-                c.session = tca.session AND
-                c.semester = tca.semester
-            WHERE c.id = %s AND tca.email = %s
-        """
-        class_info = execute_query(query, (class_id, teacher_email), fetch=True)
-        if not class_info:
-            flash("Invalid class or unauthorized access.", "error")
-            return redirect(url_for('manually_mark_attendance'))
-        class_info = class_info[0]
-
-        # Verify student is enrolled in this course
-        query = """
-            SELECT s.name 
-            FROM student_course_assign sca
-            JOIN student s ON sca.roll_number = s.roll_number
-            WHERE sca.roll_number = %s 
-              AND sca.course_code = %s 
-              AND sca.session = %s 
-              AND sca.semester = %s
-        """
-        student_info = execute_query(query, (
-            roll_number, class_info['course_code'], 
-            class_info['session'], class_info['semester']
-        ), fetch=True)
-        if not student_info:
-            flash("Student not enrolled in this course.", "error")
-            return redirect(url_for('manually_mark_attendance'))
-        student_name = student_info[0]['name']
-
-        # Calculate timein based on status
-        timein = class_info['start_time']
-        if status == 'Late':
-            # Add 15 minutes to start time for late students
-            timein = (datetime.datetime.combine(datetime.date.today(), timein) + 
-                     datetime.timedelta(minutes=15)).time()
-
-        # Insert attendance record
-        query = """
-            INSERT INTO users_logs 
-            (username, serialnumber, device_uid, checkindate, timein, timeout, fingerout)
-            VALUES (%s, %s, %s, %s, %s, %s, %s)
-            ON CONFLICT (serialnumber, checkindate) 
-            DO UPDATE SET timein = EXCLUDED.timein, timeout = EXCLUDED.timeout, fingerout = EXCLUDED.fingerout
-        """
-        execute_query(query, (
-            student_name,
-            roll_number,
-            f"Manual by {teacher_name}",
-            class_info['class_date'],
-            timein,
-            class_info['end_time'],
-            1  # fingerout
-        ))
-
-        flash(f"Attendance marked successfully for {student_name} ({roll_number}).", "success")
-        return redirect(url_for('manually_mark_attendance'))
-
     # Get teacher's classes
     query = """
         SELECT c.id, c.course_code, c.class_date, 
@@ -1940,9 +1869,133 @@ def manually_mark_attendance():
     """
     classes = execute_query(query, (teacher_email,), fetch=True)
 
+    selected_class = None
+    absent_students = []
+
+    # Handle class selection (GET request)
+    class_id = request.args.get('class_id')
+    if class_id:
+        # Get selected class details
+        query = """
+            SELECT c.* FROM classes c
+            JOIN teacher_course_assign tca ON 
+                c.course_code = tca.course_code AND
+                c.session = tca.session AND
+                c.semester = tca.semester
+            WHERE c.id = %s AND tca.email = %s
+        """
+        selected_class = execute_query(query, (class_id, teacher_email), fetch=True)
+        if selected_class:
+            selected_class = selected_class[0]
+            
+            # Get students enrolled in this course who haven't attended
+            query = """
+                SELECT s.roll_number, s.name
+                FROM student_course_assign sca
+                JOIN student s ON sca.roll_number = s.roll_number
+                WHERE sca.course_code = %s 
+                  AND sca.session = %s 
+                  AND sca.semester = %s
+                  AND NOT EXISTS (
+                      SELECT 1 FROM users_logs ul
+                      WHERE ul.serialnumber = s.roll_number
+                      AND ul.checkindate = %s
+                  )
+                ORDER BY s.roll_number
+            """
+            absent_students = execute_query(query, (
+                selected_class['course_code'],
+                selected_class['session'],
+                selected_class['semester'],
+                selected_class['class_date']
+            ), fetch=True)
+
+    if request.method == 'POST':
+        class_id = request.form.get('class_id')
+        if not class_id:
+            flash("Class selection is required.", "error")
+            return redirect(url_for('manually_mark_attendance'))
+
+        # Verify teacher is assigned to this class
+        query = """
+            SELECT c.* FROM classes c
+            JOIN teacher_course_assign tca ON 
+                c.course_code = tca.course_code AND
+                c.session = tca.session AND
+                c.semester = tca.semester
+            WHERE c.id = %s AND tca.email = %s
+        """
+        class_info = execute_query(query, (class_id, teacher_email), fetch=True)
+        if not class_info:
+            flash("Invalid class or unauthorized access.", "error")
+            return redirect(url_for('manually_mark_attendance'))
+        class_info = class_info[0]
+
+        # Process each student's attendance
+        roll_numbers = request.form.getlist('roll_numbers')
+        success_count = 0
+        
+        for roll_number in roll_numbers:
+            status = request.form.get(f'status_{roll_number}')
+            
+            # Verify student is enrolled in this course
+            query = """
+                SELECT s.name 
+                FROM student_course_assign sca
+                JOIN student s ON sca.roll_number = s.roll_number
+                WHERE sca.roll_number = %s 
+                  AND sca.course_code = %s 
+                  AND sca.session = %s 
+                  AND sca.semester = %s
+            """
+            student_info = execute_query(query, (
+                roll_number, class_info['course_code'], 
+                class_info['session'], class_info['semester']
+            ), fetch=True)
+            
+            if not student_info:
+                continue  # Skip if student not enrolled
+            
+            student_name = student_info[0]['name']
+            
+            if status == 'Absent':
+                success_count += 1
+                continue  # No need to create record for absent students
+            
+            # Calculate timein based on status
+            timein = class_info['start_time']
+            if status == 'Late':
+                # Add 15 minutes to start time for late students
+                timein = (datetime.datetime.combine(datetime.date.today(), timein) + 
+                         datetime.timedelta(minutes=15)).time()
+
+            # Insert attendance record
+            query = """
+                INSERT INTO users_logs 
+                (username, serialnumber, device_uid, checkindate, timein, timeout, fingerout)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
+                ON CONFLICT (serialnumber, checkindate) 
+                DO UPDATE SET timein = EXCLUDED.timein, timeout = EXCLUDED.timeout, fingerout = EXCLUDED.fingerout
+            """
+            execute_query(query, (
+                student_name,
+                roll_number,
+                f"Manual by {teacher_name}",
+                class_info['class_date'],
+                timein,
+                class_info['end_time'],
+                1  # fingerout
+            ))
+            success_count += 1
+
+        flash(f"Attendance marked successfully for {success_count} students.", "success")
+        return redirect(url_for('manually_mark_attendance', class_id=class_id))
+
     return render_template('manually_mark_attendance.html', 
                          classes=classes or [],
-                         teacher_name=teacher_name)
+                         teacher_name=teacher_name,
+                         selected_class=selected_class,
+                         absent_students=absent_students)
 
 if __name__ == '__main__':
     with app.app_context():
