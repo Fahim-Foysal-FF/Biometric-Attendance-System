@@ -1898,7 +1898,7 @@ def manually_mark_attendance():
                   AND sca.semester = %s
                   AND NOT EXISTS (
                       SELECT 1 FROM users_logs ul
-                      WHERE ul.serialnumber = s.roll_number
+                      WHERE ul.serialnumber::text = s.roll_number::text
                       AND ul.checkindate = %s
                   )
                 ORDER BY s.roll_number
