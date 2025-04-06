@@ -1369,6 +1369,7 @@ def fetch_students():
     SELECT roll_number, name, session, semester
     FROM student
     WHERE session = %s AND semester = %s
+    ORDER BY roll_number ASC
     """
     params = (session_value, semester)
 
